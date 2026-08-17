@@ -95,9 +95,9 @@ const processedPosts = posts.map(processPost);
                   <!-- 右侧内容 -->
                   <div class="post-body">
                     <!-- 1. 文章标题（最上方） -->
-                    <h2 class="post-title" itemprop="name headline">
+                    <!--<h2 class="post-title" itemprop="name headline">
                       <a itemprop="url" href={post.permalink}>{post.title}</a>
-                    </h2>
+                    </h2>-->
 
                     <!-- 2. 作者名（单独一行） -->
                     <div class="post-author" itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -323,7 +323,6 @@ const processedPosts = posts.map(processPost);
   gap: 4px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f0f2f5;
 }
 
 /* 单张图片 */
@@ -334,7 +333,6 @@ const processedPosts = posts.map(processPost);
   width: 100%;
   max-height: 400px;
   object-fit: contain;
-  background: #f0f2f5;
 }
 
 /* 两张图片：并排两列 */
@@ -345,7 +343,6 @@ const processedPosts = posts.map(processPost);
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: contain;
-  background: #f0f2f5;
 }
 
 /* 三张及以上：三列网格 */
@@ -368,7 +365,6 @@ const processedPosts = posts.map(processPost);
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: contain;
-  background: #f0f2f5;
 }
 
 /* 图片悬浮效果 */
