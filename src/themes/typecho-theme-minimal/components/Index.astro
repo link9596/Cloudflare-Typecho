@@ -27,12 +27,12 @@ const processPost = (post: any) => {
   while ((match = imgRegex.exec(excerpt)) !== null) {
     images.push(match[1]);
   }
-  // 从摘要中移除图片标签（避免重复显示）
+  // 从摘要中移除图片标签
   if (images.length > 0) {
     excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
   }
 
-  // 2. 生成头像（使用 Gravatar，若无邮箱则使用默认图片）
+  // 2. 生成头像（使用 Gravatar）
   const email = post.author?.mail || '';
   let avatarUrl = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?s=48&d=identicon';
   if (email) {
@@ -40,7 +40,7 @@ const processPost = (post: any) => {
     avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;
   }
 
-  return { ...post, images, excerpt, avatarUrl };
+  return { ...post, images, excerpt, avatarUrl, imageCount: images.length };
 };
 
 const processedPosts = posts.map(processPost);
@@ -94,45 +94,45 @@ const processedPosts = posts.map(processPost);
                   </div>
                   <!-- 右侧内容 -->
                   <div class="post-body">
-                    <!-- 顶部元数据：作者 + 时间/分类/评论 -->
-                    <div class="post-meta-top">
-                      <span class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">
-                        <a itemprop="name" href={post.author ? buildAuthorLink(post.author.uid, urls.siteUrl) : '#'} rel="author">
-                          {post.author?.screenName || post.author?.name || '未知'}
-                        </a>
-                      </span>
-                      <span class="post-meta-details">
-                        <time datetime={new Date((post.created) * 1000).toISOString()} itemprop="datePublished">
-                          {formatDate(post.created, 'Y.m.d H:i', options.timezone)}
-                        </time>
-                        {post.categories.length > 0 && (
-                          <>
-                            <span class="sep">·</span>
-                            {post.categories.map((c, i) => (
-                              <span key={c.cid}>
-                                {i > 0 && ', '}<a href={c.permalink}>{c.name}</a>
-                              </span>
-                            ))}
-                          </>
-                        )}
-                        <span class="sep">·</span>
-                        <a href={`${post.permalink}#comments`} itemprop="discussionUrl">
-                          {post.commentsNum === 0 ? '评论' : `${post.commentsNum} 条评论`}
-                        </a>
-                      </span>
-                    </div>
-
-                    <!-- 文章标题（链接） -->
+                    <!-- 1. 文章标题（最上方） -->
                     <h2 class="post-title" itemprop="name headline">
                       <a itemprop="url" href={post.permalink}>{post.title}</a>
                     </h2>
 
-                    <!-- 摘要（不含图片） -->
+                    <!-- 2. 作者名（单独一行） -->
+                    <div class="post-author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+                      <a itemprop="name" href={post.author ? buildAuthorLink(post.author.uid, urls.siteUrl) : '#'} rel="author">
+                        {post.author?.screenName || post.author?.name || '未知'}
+                      </a>
+                    </div>
+
+                    <!-- 3. 元数据（下一行） -->
+                    <div class="post-meta-details">
+                      <time datetime={new Date((post.created) * 1000).toISOString()} itemprop="datePublished">
+                        {formatDate(post.created, 'Y.m.d H:i', options.timezone)}
+                      </time>
+                      {post.categories.length > 0 && (
+                        <>
+                          <span class="sep">·</span>
+                          {post.categories.map((c, i) => (
+                            <span key={c.cid}>
+                              {i > 0 && ', '}<a href={c.permalink}>{c.name}</a>
+                            </span>
+                          ))}
+                        </>
+                      )}
+                      <span class="sep">·</span>
+                      <a href={`${post.permalink}#comments`} itemprop="discussionUrl">
+                        {post.commentsNum === 0 ? '评论' : `${post.commentsNum} 条评论`}
+                      </a>
+                    </div>
+
+                    <!-- 4. 摘要（不含图片） -->
                     <div class="post-excerpt" itemprop="articleBody" set:html={post.excerpt} />
 
-                    <!-- 图片网格（如果有） -->
+                    <!-- 5. 图片网格 -->
                     {post.images.length > 0 && (
-                      <div class="post-images" style:set={post.images.length}>
+                      <div class="post-images" data-count={post.imageCount}>
                         {post.images.map((src: string) => (
                           <img src={src} alt="文章配图" loading="lazy" />
                         ))}
@@ -156,9 +156,66 @@ const processedPosts = posts.map(processPost);
           )}
         </div>
 
+        <!-- 侧边栏（与原模板完全一致） -->
         {sidebarData && (
           <div class="col-mb-12 col-offset-1 col-3 kit-hidden-tb" id="secondary" role="complementary">
-            <!-- 侧边栏保持不变，省略...（同原模板） -->
+            {sidebarData.recentPosts && sidebarData.recentPosts.length > 0 && (
+              <section class="widget">
+                <h3 class="widget-title">最新文章</h3>
+                <ul class="widget-list">
+                  {sidebarData.recentPosts.map((p) => (
+                    <li><a href={p.permalink}>{p.title}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {sidebarData.recentComments && sidebarData.recentComments.length > 0 && (
+              <section class="widget">
+                <h3 class="widget-title">最近回复</h3>
+                <ul class="widget-list">
+                  {sidebarData.recentComments.map((c) => (
+                    <li><a href={c.permalink}>{c.author}</a>: {c.excerpt}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {sidebarData.categories && sidebarData.categories.length > 0 && (
+              <section class="widget">
+                <h3 class="widget-title">分类</h3>
+                <ul class="widget-list">
+                  {sidebarData.categories.map((cat) => (
+                    <li><a href={cat.permalink}>{cat.name} ({cat.count})</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {sidebarData.archives && sidebarData.archives.length > 0 && (
+              <section class="widget">
+                <h3 class="widget-title">归档</h3>
+                <ul class="widget-list">
+                  {sidebarData.archives.map((archive) => (
+                    <li><a href={archive.permalink}>{archive.date}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            <section class="widget">
+              <h3 class="widget-title">其它</h3>
+              <ul class="widget-list">
+                {isLoggedIn ? (
+                  <>
+                    <li class="last">
+                      <a href={urls.adminUrl}>进入后台 ({user?.screenName || user?.name})</a>
+                    </li>
+                    <li><form method="post" action={urls.logoutUrl} class="logout-form"><button type="submit">退出</button></form></li>
+                  </>
+                ) : (
+                  <li class="last"><a href={urls.loginUrl}>登录</a></li>
+                )}
+                <li><a href={urls.feedUrl}>文章 RSS</a></li>
+                <li><a href={urls.commentsFeedUrl}>评论 RSS</a></li>
+              </ul>
+            </section>
           </div>
         )}
       </div>
@@ -167,6 +224,191 @@ const processedPosts = posts.map(processPost);
 
   <footer id="footer" role="contentinfo">
     &copy; {new Date().getFullYear()} <a href={urls.siteUrl}>{options.title}</a>.
-    由 <a href="https://github.com/eslizn/typecho-cf">Typecho</a> 强力驱动.
+    由 <a href="https://github.com/eslizn/typecho-cf">Typecho CF</a> 强力驱动.
   </footer>
 </Base>
+
+<style>
+/* ---- 文章卡片样式（仅作用于本组件） ---- */
+.post-card {
+  display: flex;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #eaecef;
+}
+
+.post-card:last-child {
+  border-bottom: none;
+}
+
+.post-avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+}
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f0f2f5;
+}
+
+.post-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-title {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.post-title a {
+  color: #1d2129;
+  text-decoration: none;
+}
+.post-title a:hover {
+  color: #1e80ff;
+}
+
+.post-author {
+  font-weight: 500;
+  font-size: 15px;
+  color: #1e80ff;
+  margin-bottom: 2px;
+}
+.post-author a {
+  color: inherit;
+  text-decoration: none;
+}
+.post-author a:hover {
+  text-decoration: underline;
+}
+
+.post-meta-details {
+  font-size: 14px;
+  color: #8a8f9a;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  margin-bottom: 6px;
+}
+.post-meta-details a {
+  color: #8a8f9a;
+  text-decoration: none;
+}
+.post-meta-details a:hover {
+  color: #1e80ff;
+}
+.post-meta-details .sep {
+  color: #d0d4dc;
+}
+
+.post-excerpt {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #4e5969;
+  word-break: break-word;
+  margin-bottom: 10px;
+}
+.post-excerpt p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== 图片网格 ===== */
+.post-images {
+  display: grid;
+  gap: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0f2f5;
+}
+
+/* 单张图片 */
+.post-images[data-count="1"] {
+  grid-template-columns: 1fr;
+}
+.post-images[data-count="1"] img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  background: #f0f2f5;
+}
+
+/* 两张图片：并排两列 */
+.post-images[data-count="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+.post-images[data-count="2"] img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: #f0f2f5;
+}
+
+/* 三张及以上：三列网格 */
+.post-images[data-count="3"],
+.post-images[data-count="4"],
+.post-images[data-count="5"],
+.post-images[data-count="6"],
+.post-images[data-count="7"],
+.post-images[data-count="8"],
+.post-images[data-count="9"] {
+  grid-template-columns: repeat(3, 1fr);
+}
+.post-images[data-count="3"] img,
+.post-images[data-count="4"] img,
+.post-images[data-count="5"] img,
+.post-images[data-count="6"] img,
+.post-images[data-count="7"] img,
+.post-images[data-count="8"] img,
+.post-images[data-count="9"] img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: #f0f2f5;
+}
+
+/* 图片悬浮效果 */
+.post-images img {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+.post-images img:hover {
+  transform: scale(1.02);
+}
+
+/* 响应式调整 */
+@media (max-width: 600px) {
+  .post-card {
+    gap: 12px;
+    padding: 16px 0;
+  }
+  .post-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  .post-title {
+    font-size: 16px;
+  }
+  .post-author {
+    font-size: 14px;
+  }
+  .post-meta-details {
+    font-size: 13px;
+  }
+  .post-excerpt {
+    font-size: 14px;
+  }
+  .post-images[data-count="2"] {
+    grid-template-columns: 1fr 1fr;
+  }
+  .post-images[data-count="3"],
+  .post-images[data-count="4"],
+  .post-images[data-count="5"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+</style>
