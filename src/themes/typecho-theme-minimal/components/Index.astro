@@ -87,58 +87,87 @@ const processedPosts = posts.map(processPost);
           ) : (
             processedPosts.map((post) => (
               <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
-                <div class="post-card">
-                  <!-- 左侧头像 -->
-                  <div class="post-avatar">
-                    <img src={post.avatarUrl} alt={post.author?.screenName || post.author?.name || '用户'} />
-                  </div>
-                  <!-- 右侧内容 -->
-                  <div class="post-body">
-                    <!-- 1. 文章标题（最上方） -->
-                    <!--<h2 class="post-title" itemprop="name headline">
-                      <a itemprop="url" href={post.permalink}>{post.title}</a>
-                    </h2>-->
+                <!-- 卡片容器，用于整体点击 -->
+                <div class="post-card" style="position: relative;">
+                  <!-- 覆盖整个卡片的链接（点击进入详情） -->
+                  <a href={post.permalink} class="post-card-link" style="position: absolute; inset: 0; z-index: 1;"></a>
 
-                    <!-- 2. 作者名（单独一行） -->
-                    <div class="post-author" itemprop="author" itemscope itemtype="http://schema.org/Person">
-                      <a itemprop="name" href={post.author ? buildAuthorLink(post.author.uid, urls.siteUrl) : '#'} rel="author">
-                        {post.author?.screenName || post.author?.name || '未知'}
-                      </a>
+                  <!-- 第一行：头像 + 元数据（水平排列） -->
+                  <div class="post-header" style="display: flex; align-items: center; gap: 12px; position: relative; z-index: 2;">
+                    <!-- 头像 -->
+                    <div class="post-avatar" style="flex-shrink: 0; width: 48px; height: 48px;">
+                      <img
+                        src={post.avatarUrl}
+                        alt={post.author?.screenName || post.author?.name || '用户'}
+                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
+                      />
                     </div>
-
-                    <!-- 3. 元数据（下一行） -->
-                    <div class="post-meta-details">
-                      <time datetime={new Date((post.created) * 1000).toISOString()} itemprop="datePublished">
+                    <!-- 元数据区（作者、时间、分类、评论） -->
+                    <div class="post-meta-top" style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 14px; color: #8a8f9a;">
+                      <span class="post-author" style="font-weight: 600; color: #1e80ff;">
+                        <a
+                          itemprop="name"
+                          href={post.author ? buildAuthorLink(post.author.uid, urls.siteUrl) : '#'}
+                          rel="author"
+                          style="color: inherit; text-decoration: none; position: relative; z-index: 3;"
+                        >
+                          {post.author?.screenName || post.author?.name || '未知'}
+                        </a>
+                      </span>
+                      <time
+                        datetime={new Date((post.created) * 1000).toISOString()}
+                        itemprop="datePublished"
+                        style="color: #8a8f9a;"
+                      >
                         {formatDate(post.created, 'Y.m.d H:i', options.timezone)}
                       </time>
                       {post.categories.length > 0 && (
                         <>
-                          <span class="sep">·</span>
+                          <span class="sep" style="color: #d0d4dc;">·</span>
                           {post.categories.map((c, i) => (
-                            <span key={c.cid}>
-                              {i > 0 && ', '}<a href={c.permalink}>{c.name}</a>
+                            <span key={c.cid} style="position: relative; z-index: 3;">
+                              {i > 0 && ', '}
+                              <a href={c.permalink} style="color: #8a8f9a; text-decoration: none;">{c.name}</a>
                             </span>
                           ))}
                         </>
                       )}
-                      <span class="sep">·</span>
-                      <a href={`${post.permalink}#comments`} itemprop="discussionUrl">
+                      <span class="sep" style="color: #d0d4dc;">·</span>
+                      <a
+                        href={`${post.permalink}#comments`}
+                        itemprop="discussionUrl"
+                        style="color: #8a8f9a; text-decoration: none; position: relative; z-index: 3;"
+                      >
                         {post.commentsNum === 0 ? '评论' : `${post.commentsNum} 条评论`}
                       </a>
                     </div>
-
-                    <!-- 4. 摘要（不含图片） -->
-                    <div class="post-excerpt" itemprop="articleBody" set:html={post.excerpt} />
-
-                    <!-- 5. 图片网格 -->
-                    {post.images.length > 0 && (
-                      <div class="post-images" data-count={post.imageCount}>
-                        {post.images.map((src: string) => (
-                          <img src={src} alt="文章配图" loading="lazy" />
-                        ))}
-                      </div>
-                    )}
                   </div>
+
+                  <!-- 第二行：摘要（左对齐） -->
+                  <div
+                    class="post-excerpt"
+                    itemprop="articleBody"
+                    set:html={post.excerpt}
+                    style="margin-top: 8px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word; position: relative; z-index: 2;"
+                  />
+
+                  <!-- 第三行：图片网格 -->
+                  {post.images.length > 0 && (
+                    <div
+                      class="post-images"
+                      data-count={post.imageCount}
+                      style="display: grid; gap: 4px; margin-top: 12px; border-radius: 8px; overflow: hidden; position: relative; z-index: 2;"
+                    >
+                      {post.images.map((src: string) => (
+                        <img
+                          src={src}
+                          alt="文章配图"
+                          loading="lazy"
+                          style="width: 100%; object-fit: cover; display: block;"
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </article>
             ))
@@ -228,124 +257,25 @@ const processedPosts = posts.map(processPost);
   </footer>
 </Base>
 
+<!-- 图片网格专用样式（覆盖全局） -->
 <style>
-/* ---- 文章卡片样式（仅作用于本组件） ---- */
-.post-card {
-  display: flex;
-  gap: 16px;
-  padding: 20px 0;
-  border-bottom: 1px solid #eaecef;
-}
-
-.post-card:last-child {
-  border-bottom: none;
-}
-
-.post-avatar {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-}
-.post-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #f0f2f5;
-}
-
-.post-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.post-title {
-  margin: 0 0 4px 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-.post-title a {
-  color: #1d2129;
-  text-decoration: none;
-}
-.post-title a:hover {
-  color: #1e80ff;
-}
-
-.post-author {
-  font-weight: 500;
-  font-size: 15px;
-  color: #1e80ff;
-  margin-bottom: 2px;
-}
-.post-author a {
-  color: inherit;
-  text-decoration: none;
-}
-.post-author a:hover {
-  text-decoration: underline;
-}
-
-.post-meta-details {
-  font-size: 14px;
-  color: #8a8f9a;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 6px;
-  margin-bottom: 6px;
-}
-.post-meta-details a {
-  color: #8a8f9a;
-  text-decoration: none;
-}
-.post-meta-details a:hover {
-  color: #1e80ff;
-}
-.post-meta-details .sep {
-  color: #d0d4dc;
-}
-
-.post-excerpt {
-  font-size: 15px;
-  line-height: 1.7;
-  color: #4e5969;
-  word-break: break-word;
-  margin-bottom: 10px;
-}
-.post-excerpt p:last-child {
-  margin-bottom: 0;
-}
-
-/* ===== 图片网格 ===== */
-.post-images {
-  display: grid;
-  gap: 4px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-/* 单张图片 */
+/* 图片网格布局 */
 .post-images[data-count="1"] {
   grid-template-columns: 1fr;
 }
 .post-images[data-count="1"] img {
-  width: 100%;
-  max-height: 400px;
-  object-fit: contain;
+  max-height: 300px;
+  width: auto;
+  margin: 0 auto;
 }
 
-/* 两张图片：并排两列 */
 .post-images[data-count="2"] {
   grid-template-columns: 1fr 1fr;
 }
 .post-images[data-count="2"] img {
-  width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: contain;
 }
 
-/* 三张及以上：三列网格 */
 .post-images[data-count="3"],
 .post-images[data-count="4"],
 .post-images[data-count="5"],
@@ -362,49 +292,40 @@ const processedPosts = posts.map(processPost);
 .post-images[data-count="7"] img,
 .post-images[data-count="8"] img,
 .post-images[data-count="9"] img {
-  width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: contain;
 }
 
 /* 图片悬浮效果 */
-.post-images img {
-  transition: transform 0.2s ease;
-  cursor: pointer;
-}
 .post-images img:hover {
   transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+/* 内部链接高于覆盖层 */
+.post-card a:not(.post-card-link) {
+  position: relative;
+  z-index: 3;
+}
+
+/* 覆盖链接不能改变布局 */
+.post-card-link {
+  cursor: pointer;
 }
 
 /* 响应式调整 */
 @media (max-width: 600px) {
-  .post-card {
-    gap: 12px;
-    padding: 16px 0;
-  }
   .post-avatar {
-    width: 40px;
-    height: 40px;
+    width: 40px !important;
+    height: 40px !important;
   }
-  .post-title {
-    font-size: 16px;
-  }
-  .post-author {
-    font-size: 14px;
-  }
-  .post-meta-details {
-    font-size: 13px;
+  .post-meta-top {
+    font-size: 13px !important;
   }
   .post-excerpt {
-    font-size: 14px;
+    font-size: 14px !important;
   }
-  .post-images[data-count="2"] {
-    grid-template-columns: 1fr 1fr;
-  }
-  .post-images[data-count="3"],
-  .post-images[data-count="4"],
-  .post-images[data-count="5"] {
-    grid-template-columns: repeat(3, 1fr);
+  .post-images[data-count="1"] img {
+    max-height: 200px;
   }
 }
 </style>
