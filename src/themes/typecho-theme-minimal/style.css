@@ -511,3 +511,189 @@ img.alignright {
 */
 .invisible {
   visibility: hidden; }
+
+/* 文章卡片容器 */
+.post-card {
+  display: flex;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #eaecef;
+}
+
+.post-card:last-child {
+  border-bottom: none;
+}
+
+/* 左侧头像 */
+.post-avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+}
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f0f2f5;
+}
+
+/* 右侧内容区 */
+.post-body {
+  flex: 1;
+  min-width: 0; /* 防止溢出 */
+}
+
+/* 顶部元数据行 */
+.post-meta-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: 14px;
+  color: #8a8f9a;
+  margin-bottom: 4px;
+}
+.post-meta-top .author-name {
+  font-weight: 600;
+  color: #1e80ff;
+}
+.post-meta-top .author-name a {
+  color: inherit;
+  text-decoration: none;
+}
+.post-meta-top .author-name a:hover {
+  text-decoration: underline;
+}
+.post-meta-top .post-meta-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.post-meta-top .post-meta-details a {
+  color: #8a8f9a;
+  text-decoration: none;
+}
+.post-meta-top .post-meta-details a:hover {
+  color: #1e80ff;
+}
+.post-meta-top .sep {
+  color: #d0d4dc;
+}
+
+/* 文章标题 */
+.post-title {
+  margin: 4px 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.post-title a {
+  color: #1d2129;
+  text-decoration: none;
+}
+.post-title a:hover {
+  color: #1e80ff;
+}
+
+/* 摘要文本 */
+.post-excerpt {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #4e5969;
+  word-break: break-word;
+}
+.post-excerpt p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== 图片网格 ===== */
+.post-images {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 单张图片：占满 */
+.post-images[style*="1"] {
+  grid-template-columns: 1fr;
+}
+.post-images[style*="1"] img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+/* 两张图片：各占一半 */
+.post-images[style*="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+.post-images[style*="2"] img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+/* 三张及以上：三列网格（微博风格） */
+.post-images[style*="3"],
+.post-images[style*="4"],
+.post-images[style*="5"],
+.post-images[style*="6"],
+.post-images[style*="7"],
+.post-images[style*="8"],
+.post-images[style*="9"] {
+  grid-template-columns: repeat(3, 1fr);
+}
+.post-images[style*="3"] img,
+.post-images[style*="4"] img,
+.post-images[style*="5"] img,
+.post-images[style*="6"] img,
+.post-images[style*="7"] img,
+.post-images[style*="8"] img,
+.post-images[style*="9"] img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+/* 如果是 4 张，第一行两张，第二行两张（因为三列，最后一行不足三张会自动填充） */
+/* 可根据需要微调 */
+
+/* 图片悬浮效果 */
+.post-images img {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+.post-images img:hover {
+  transform: scale(1.02);
+}
+
+/* 响应式调整 */
+@media (max-width: 600px) {
+  .post-card {
+    gap: 12px;
+    padding: 16px 0;
+  }
+  .post-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  .post-meta-top {
+    font-size: 13px;
+  }
+  .post-title {
+    font-size: 16px;
+  }
+  .post-excerpt {
+    font-size: 14px;
+  }
+  .post-images[style*="2"] {
+    grid-template-columns: 1fr 1fr;
+  }
+  .post-images[style*="3"],
+  .post-images[style*="4"],
+  .post-images[style*="5"] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
