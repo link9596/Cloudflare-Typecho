@@ -51,7 +51,13 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
   ))}
   <link rel="alternate" type="application/rss+xml" title={`${options.title} RSS`} href={urls.feedUrl} />
   <slot name="head" />
+  <Fragment set:html={pluginSnippets.headHtml} />
+</head>
+<body class={bodyClass}>
+  <slot />
   <Fragment set:html={pluginSnippets.bodyHtml} />
+  
+  <!-- Swup 页面切换 -->
   <script>
     import Swup from 'swup';
 
@@ -63,6 +69,7 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
       });
 
       swup.on('page:view', function () {
+        // 重新初始化 Lightbox
         if (typeof Lightbox !== 'undefined' && Lightbox.init) {
           Lightbox.init('.lightbox-img');
         }
