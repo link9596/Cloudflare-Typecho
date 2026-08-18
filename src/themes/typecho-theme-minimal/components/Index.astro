@@ -1,6 +1,9 @@
 ---
 /**
  * Default theme — Index (home page) component
+ * 微博风格卡片，无标题，点击卡片进入详情（内部链接独立）
+ * 支持图片网格：1张自适应、2张并排、3张三列、4张2x2、5张及以上三列
+ * 新增：点击图片弹出灯箱（带缩放动画）
  */
 import Base from '@/layouts/Base.astro';
 import type { ThemeIndexProps } from '@/lib/theme-props';
@@ -82,13 +85,13 @@ const processedPosts = posts.map(processPost);
           ) : (
             processedPosts.map((post) => (
               <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
-                <div class="post-card" style="position: relative; padding: 16px 0;">
+                <div class="post-card" style="position: relative; padding: 16px 0; border-bottom: 1px solid #eaecef;">
                   <!-- 覆盖链接 -->
                   <a href={post.permalink} class="card-overlay" style="position: absolute; inset: 0; z-index: 1; display: block; cursor: pointer;"></a>
 
                   <!-- 头像 + 元数据（两行） -->
                   <div class="post-header" style="display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 2;">
-                    <div class="post-avatar" style="flex-shrink: 0; width: 36px; height: 36px;">
+                    <div class="post-avatar" style="flex-shrink: 0; width: 48px; height: 48px;">
                       <img
                         src={post.avatarUrl}
                         alt={post.author?.screenName || '用户'}
@@ -138,7 +141,7 @@ const processedPosts = posts.map(processPost);
                     class="post-excerpt"
                     itemprop="articleBody"
                     set:html={post.excerpt}
-                    style="margin-top: 8px; padding-left: 48px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word;"
+                    style="margin-top: 8px; padding-left: 60px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word;"
                   />
 
                   <!-- 图片网格 -->
@@ -146,14 +149,14 @@ const processedPosts = posts.map(processPost);
                     <div
                       class="post-images"
                       data-count={post.imageCount}
-                      style="margin-top: 12px; margin-left: 48px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%;"
+                      style="margin-top: 12px; margin-left: 60px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%;"
                     >
                       {post.images.map((src: string) => (
                         <img
                           src={src}
                           alt="文章配图"
                           loading="lazy"
-                          style="width: 100%; object-fit: cover; display: block;"
+                          style="width: 100%; object-fit: cover; display: block; cursor: pointer;"
                         />
                       ))}
                     </div>
@@ -308,7 +311,64 @@ const processedPosts = posts.map(processPost);
   transform: scale(1.02);
 }
 
-/* 响应式 */
+/* ========== 灯箱样式（新增） ========== */
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.lightbox-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lightbox-image {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 4px;
+  transform: scale(0.8);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.lightbox-overlay.active .lightbox-image {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 30px;
+  font-size: 36px;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  z-index: 10000;
+  font-family: sans-serif;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.lightbox-close:hover {
+  opacity: 1;
+}
+
+/* 响应式调整 */
 @media (max-width: 768px) {
   .post-images {
     max-width: 100% !important;
@@ -320,5 +380,70 @@ const processedPosts = posts.map(processPost);
   .post-header {
     flex-wrap: wrap;
   }
+  .lightbox-image {
+    max-width: 95vw;
+    max-height: 85vh;
+  }
 }
 </style>
+
+<!-- ========== 灯箱 JavaScript（新增） ========== -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 创建灯箱 DOM 结构
+    const overlay = document.createElement('div');
+    overlay.className = 'lightbox-overlay';
+    overlay.innerHTML = `
+      <button class="lightbox-close" aria-label="关闭">&times;</button>
+      <img class="lightbox-image" src="" alt="大图预览" />
+    `;
+    document.body.appendChild(overlay);
+
+    const imgEl = overlay.querySelector('.lightbox-image');
+    const closeBtn = overlay.querySelector('.lightbox-close');
+
+    // 打开灯箱
+    function openLightbox(src) {
+      imgEl.src = src;
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden'; // 禁止滚动
+    }
+
+    // 关闭灯箱
+    function closeLightbox() {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      // 延迟清空 src 避免闪动
+      setTimeout(() => {
+        if (!overlay.classList.contains('active')) {
+          imgEl.src = '';
+        }
+      }, 400);
+    }
+
+    // 事件监听：点击所有文章配图
+    document.addEventListener('click', function (e) {
+      const target = e.target;
+      if (target.tagName === 'IMG' && target.closest('.post-images')) {
+        e.preventDefault();
+        e.stopPropagation(); // 防止触发卡片跳转
+        const src = target.getAttribute('src');
+        if (src) openLightbox(src);
+      }
+    });
+
+    // 点击背景关闭
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay || e.target === closeBtn) {
+        closeLightbox();
+      }
+    });
+
+    // ESC 键关闭
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('active')) {
+        closeLightbox();
+      }
+    });
+  });
+</script>
