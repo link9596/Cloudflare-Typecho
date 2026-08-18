@@ -451,7 +451,7 @@ img.alignright {
   #nav-menu a {
     float: none;
     display: inline-block;
-    margin: 0 -2px;
+    margin: 0px;
   }
 }
 
