@@ -13,6 +13,25 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+    #main, #secondary, #header, #footer {
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      will-change: opacity, transform;
+    }
+    html.is-animating #main,
+    html.is-animating #secondary,
+    html.is-animating #header,
+    html.is-animating #footer {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    html.is-leaving #main,
+    html.is-leaving #secondary,
+    html.is-leaving #header,
+    html.is-leaving #footer {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
 body {
   background-color: #FFF;
   color: #444;
