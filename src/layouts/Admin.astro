@@ -189,7 +189,7 @@ const adminFooterHtml = await applyFilterSafely(_pluginCtx, 'admin:footer', '', 
             trigger.attr('aria-expanded', open ? 'true' : 'false');
           }
 
-          ul.on('click touchend', '.parent a', function (e) {
+          ul.on('click touchend', 'li.parent > a', function (e) {
             nav.removeClass('noexpanded').addClass('expanded');
             setGroupExpanded(true);
             if ($(window).width() < 576 && e.type == 'click') {
