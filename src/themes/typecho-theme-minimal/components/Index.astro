@@ -1,6 +1,9 @@
 ---
 /**
  * Default theme — Index (home page) component
+ * 微博风格卡片，无标题
+ * 点击头部 + 摘要进入详情（图片区域不跳转）
+ * 图片灯箱使用 Lightbox 插件
  */
 import Base from '@/layouts/Base.astro';
 import type { ThemeIndexProps } from '@/lib/theme-props';
@@ -29,7 +32,7 @@ const processPost = (post: any) => {
   }
 
   const email = post.author?.mail || '';
-  let avatarUrl = 'https://seccdn.libravatar.org/avatar/17885ae2e792de13ef1b68309799f7e4?d=404';
+  let avatarUrl = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?s=48&d=identicon';
   if (email) {
     const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
     avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;
@@ -83,10 +86,10 @@ const processedPosts = posts.map(processPost);
             processedPosts.map((post) => (
               <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
                 <div class="post-card" style="position: relative; padding: 16px 0; border-bottom: 1px solid #eaecef;">
-                  <!-- 覆盖链接（点击卡片空白区域进入详情） -->
+                  <!-- 覆盖层：点击跳转详情（覆盖头部和摘要，不覆盖图片） -->
                   <a href={post.permalink} class="card-overlay" style="position: absolute; inset: 0; z-index: 1; display: block; cursor: pointer;"></a>
 
-                  <!-- 头像 + 元数据（两行） -->
+                  <!-- 头部：头像 + 元数据 -->
                   <div class="post-header" style="display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 2;">
                     <div class="post-avatar" style="flex-shrink: 0; width: 48px; height: 48px;">
                       <img
@@ -133,26 +136,27 @@ const processedPosts = posts.map(processPost);
                     </div>
                   </div>
 
-                  <!-- 摘要 -->
+                  <!-- 摘要（与头部一样，位于覆盖层之上，点击触发跳转） -->
                   <div
                     class="post-excerpt"
                     itemprop="articleBody"
                     set:html={post.excerpt}
-                    style="margin-top: 8px; padding-left: 60px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word;"
+                    style="margin-top: 8px; padding-left: 60px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word; position: relative; z-index: 2;"
                   />
 
-                  <!-- 图片网格（图片不带 lightbox-img 类，手动绑定） -->
+                  <!-- 图片网格（置于覆盖层之上，点击不会触发跳转） -->
                   {post.images.length > 0 && (
                     <div
                       class="post-images"
                       data-count={post.imageCount}
-                      style="margin-top: 12px; margin-left: 60px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%;"
+                      style="margin-top: 12px; margin-left: 60px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%; position: relative; z-index: 2;"
                     >
                       {post.images.map((src: string) => (
                         <img
                           src={src}
                           alt="文章配图"
                           loading="lazy"
+                          class="lightbox-img"
                           style="width: 100%; object-fit: cover; display: block; cursor: pointer;"
                         />
                       ))}
@@ -171,7 +175,7 @@ const processedPosts = posts.map(processPost);
           )}
         </div>
 
-        <!-- 侧边栏（完整保留） -->
+        <!-- 侧边栏 -->
         {sidebarData && (
           <div class="col-mb-12 col-offset-1 col-3 kit-hidden-tb" id="secondary" role="complementary">
             {sidebarData.recentPosts && sidebarData.recentPosts.length > 0 && (
@@ -249,7 +253,7 @@ const processedPosts = posts.map(processPost);
   z-index: 1;
 }
 
-/* 内部链接置于上层 */
+/* 内部链接置于覆盖层之上 */
 .post-author a,
 .post-meta-details a,
 .post-meta-details span a {
@@ -322,18 +326,9 @@ const processedPosts = posts.map(processPost);
 <!-- 引入 Lightbox 插件 -->
 <script src="https://atlinker.cn/assets/js/lightbox.min.js"></script>
 
-<!-- 初始化并手动绑定图片点击（阻止冒泡） -->
+<!-- 初始化 Lightbox（使用 .lightbox-img 类） -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // 初始化 lightbox 内部结构（不自动绑定任何图片）
-    Lightbox.init('.no-lightbox');
-
-    // 为所有配图绑定点击事件，阻止冒泡并手动打开灯箱
-    document.querySelectorAll('.post-images img').forEach(function (img) {
-      img.addEventListener('click', function (e) {
-        e.stopPropagation(); // 阻止事件冒泡到卡片覆盖层
-        Lightbox.open(this);
-      });
-    });
+    Lightbox.init('.lightbox-img');
   });
 </script>
