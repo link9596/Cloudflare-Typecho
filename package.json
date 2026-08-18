@@ -35,6 +35,7 @@
     "drizzle-orm": "^0.45.2",
     "marked": "^18.0.9",
     "sanitize-html": "^2.17.7",
+    "swup": "^4.9.2",
     "typecho-plugin-antispam": "file:src/plugins/typecho-plugin-antispam",
     "typecho-plugin-scribe": "file:src/plugins/typecho-plugin-scribe",
     "typecho-plugin-turnstile": "file:src/plugins/typecho-plugin-turnstile",

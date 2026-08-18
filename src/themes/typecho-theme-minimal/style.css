@@ -9,6 +9,10 @@
 /* ------------------
  * Global style
  * --------------- */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background-color: #FFF;
   color: #444;
@@ -452,6 +456,10 @@ img.alignright {
     float: none;
     display: inline-block;
     margin: 0px;
+  }
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 

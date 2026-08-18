@@ -51,10 +51,23 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
   ))}
   <link rel="alternate" type="application/rss+xml" title={`${options.title} RSS`} href={urls.feedUrl} />
   <slot name="head" />
-  <Fragment set:html={pluginSnippets.headHtml} />
-</head>
-<body class={bodyClass}>
-  <slot />
   <Fragment set:html={pluginSnippets.bodyHtml} />
+  <script>
+    import Swup from 'swup';
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const swup = new Swup({
+        containers: ['#main', '#secondary', '#header', '#footer'],
+        cache: true,
+        linkSelector: 'a[href^="/"]:not([data-no-swup])',
+      });
+
+      swup.on('page:view', function () {
+        if (typeof Lightbox !== 'undefined' && Lightbox.init) {
+          Lightbox.init('.lightbox-img');
+        }
+      });
+    });
+  </script>
 </body>
 </html>
