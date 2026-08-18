@@ -58,23 +58,40 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
   <Fragment set:html={pluginSnippets.bodyHtml} />
   
   <!-- Swup 页面切换 -->
-  <script>
-    import Swup from 'swup';
+<script type="module">
+  import Swup from 'swup';
 
-    document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    try {
+      console.log('Swup imported:', Swup); // 检查 Swup 是否正确导入
+
       const swup = new Swup({
         containers: ['#main', '#secondary', '#header', '#footer'],
         cache: true,
-        linkSelector: 'a[href^="/"]:not([data-no-swup])',
+        linkSelector: 'a[href^="/"], a[href^="' + window.location.origin + '/"]',
+        smoothScrolling: true,
+        animationDuration: 400,
       });
 
-      swup.on('page:view', function () {
-        // 重新初始化 Lightbox
-        if (typeof Lightbox !== 'undefined' && Lightbox.init) {
-          Lightbox.init('.lightbox-img');
-        }
-      });
-    });
-  </script>
+      console.log('Swup instance:', swup); // 检查实例
+
+      // 保存全局引用
+      window.swup = swup;
+
+      // 检查是否有 on 方法
+      if (typeof swup.on === 'function') {
+        swup.on('page:view', function () {
+          if (window.Lightbox && window.Lightbox.init) {
+            window.Lightbox.init('.lightbox-img');
+          }
+        });
+      } else {
+        console.error('Swup instance has no "on" method:', swup);
+      }
+    } catch (error) {
+      console.error('Swup initialization failed:', error);
+    }
+  });
+</script>
 </body>
 </html>
