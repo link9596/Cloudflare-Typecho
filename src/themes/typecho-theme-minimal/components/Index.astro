@@ -29,7 +29,7 @@ const processPost = (post: any) => {
   }
 
   const email = post.author?.mail || '';
-  let avatarUrl = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?s=48&d=identicon';
+  let avatarUrl = 'https://seccdn.libravatar.org/avatar/17885ae2e792de13ef1b68309799f7e4?d=404';
   if (email) {
     const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
     avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;
