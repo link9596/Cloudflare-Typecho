@@ -40,6 +40,19 @@ a {
 a:hover, a:active {
   color: #444;
 }
+
+button {
+    -webkit-appearance: button;
+    background-color: #5973b9;
+    border: none;
+    color: #ffffff;
+    padding: 5px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 6px;
+}
+
 .logout-form {
   display: inline;
   margin: 0;
@@ -508,6 +521,8 @@ img.alignright {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: pan-y pinch-zoom;
+    pointer-events: none;
+    border-radius: 6px;
 }
 
 .live-photo-img,

@@ -67,7 +67,6 @@ const processedPosts = posts.map(processPost);
 
 // 辅助：生成正方形 LivePhoto 容器（多图使用）
 function buildSquareLivePhoto(src: string, videoSrc?: string): string {
-  // 保证所有属性完整，结构与原始一致
   return `<div style="position:relative; width:100%; padding-top:100%;" class="live-photo">
     <img class="live-photo-img" src="${src}" alt="Live Photo" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;border-radius: 0px;">
     <video class="live-photo-video" playsinline muted preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;">
