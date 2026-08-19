@@ -18,7 +18,13 @@ export default defineConfig({
     checkOrigin: true,
     csp: {
       directives: [
+        "default-src 'self'",
+        "script-src 'self' https://static.cloudflareinsights.com",
+        "style-src 'self' 'unsafe-inline'",
         "media-src 'self' https://files.atlinker.cn",
+        "img-src 'self' data: blob:",
+        "connect-src 'self' https://static.cloudflareinsights.com",
+        "font-src 'self' data:",
       ],
     },
   },
