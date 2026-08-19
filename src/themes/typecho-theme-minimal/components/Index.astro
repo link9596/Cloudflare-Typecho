@@ -18,39 +18,28 @@ const isIndex = currentPath === '/';
 
 const processPost = (post: any) => {
   let excerpt = post.excerpt || '';
-  const mediaItems: { src: string; video?: string; isLivePhoto: boolean }[] = [];
+  const mediaItems: { type: 'image' | 'livephoto'; html: string; src?: string }[] = [];
 
-  // 1. 提取 LivePhoto 容器（class 含 live-photo-wrapper）
+  // 1. 提取 LivePhoto 容器（保留完整 HTML）
   const livePhotoRegex = /<div[^>]*class="[^"]*live-photo-wrapper[^"]*"[^>]*>[\s\S]*?<\/div>/g;
   let match;
   while ((match = livePhotoRegex.exec(excerpt)) !== null) {
-    const html = match[0];
-    // 提取图片 src
-    const imgMatch = html.match(/<img[^>]*src="([^">]+)"/);
-    // 提取视频 src（优先从 <source>，其次从 video 的 src 属性）
-    const videoMatch = html.match(/<video[^>]*>[\s\S]*?<source[^>]*src="([^">]+)"/) ||
-                       html.match(/<video[^>]*src="([^">]+)"/);
-    if (imgMatch) {
-      mediaItems.push({
-        src: imgMatch[1],
-        video: videoMatch ? videoMatch[1] : undefined,
-        isLivePhoto: true,
-      });
-    }
+    mediaItems.push({
+      type: 'livephoto',
+      html: match[0],
+    });
   }
-  // 移除所有 LivePhoto 容器
   excerpt = excerpt.replace(livePhotoRegex, '');
 
   // 2. 提取普通图片
   const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
   while ((match = imgRegex.exec(excerpt)) !== null) {
     mediaItems.push({
+      type: 'image',
       src: match[1],
-      video: undefined,
-      isLivePhoto: false,
+      html: '',
     });
   }
-  // 移除所有 img 标签，使摘要只保留纯文本
   excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
 
   // 3. 头像处理
@@ -109,10 +98,8 @@ const processedPosts = posts.map(processPost);
             processedPosts.map((post) => (
               <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
                 <div class="post-card" style="position: relative; padding: 16px 0;">
-                  <!-- 覆盖层：点击跳转详情（覆盖头部和摘要，不覆盖图片） -->
                   <a href={post.permalink} class="card-overlay" style="position: absolute; inset: 0; z-index: 1; display: block; cursor: pointer;"></a>
 
-                  <!-- 头部：头像 + 元数据 -->
                   <div class="post-header" style="display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 2;">
                     <div class="post-avatar" style="flex-shrink: 0; width: 36px; height: 36px;">
                       <img
@@ -159,7 +146,6 @@ const processedPosts = posts.map(processPost);
                     </div>
                   </div>
 
-                  <!-- 摘要（纯文本，已移除所有图片） -->
                   <div
                     class="post-excerpt"
                     itemprop="articleBody"
@@ -167,23 +153,35 @@ const processedPosts = posts.map(processPost);
                     style="margin-top: 26px; padding-left: 48px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word; position: relative; z-index: 0;"
                   />
 
-                  <!-- 图片网格（包含普通图片和 LivePhoto 图片） -->
                   {post.mediaItems.length > 0 && (
                     <div
                       class="post-images"
                       data-count={post.mediaItems.length}
                       style="margin-top: 12px; margin-left: 48px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%; position: relative; z-index: 2;"
                     >
-                      {post.mediaItems.map((item) => (
-                        <img
-                          src={item.src}
-                          alt="配图"
-                          loading="lazy"
-                          class={item.isLivePhoto ? 'live-photo-img lightbox-img' : 'lightbox-img'}
-                          data-video-src={item.video || undefined}
-                          style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer;"
-                        />
-                      ))}
+                      {post.mediaItems.map((item) => {
+                        if (item.type === 'image') {
+                          return (
+                            <img
+                              src={item.src}
+                              alt="配图"
+                              loading="lazy"
+                              class="lightbox-img"
+                              style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer;"
+                            />
+                          );
+                        } else {
+                          // LivePhoto：直接插入完整容器，但容器可能被网格压缩，我们设置容器宽高100%并让内部元素适应
+                          // 但容器内部有 padding-top，会撑高，所以需要覆盖样式
+                          // 我们在这个外层 div 上设置 aspect-ratio: 1/1; overflow: hidden;
+                          // 然后让内部容器 width:100%; height:100%; 并调整内部的 padding-top 行为
+                          return (
+                            <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
+                              <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+                            </div>
+                          );
+                        }
+                      })}
                     </div>
                   )}
                 </div>
@@ -199,68 +197,69 @@ const processedPosts = posts.map(processPost);
           )}
         </div>
 
-        <!-- 侧边栏 -->
-        {sidebarData && (
-          <div class="col-mb-12 col-offset-1 col-3 kit-hidden-tb" id="secondary" role="complementary">
-            {sidebarData.recentPosts && sidebarData.recentPosts.length > 0 && (
+        <div class="col-mb-12 col-offset-1 col-3 kit-hidden-tb" id="secondary" role="complementary">
+          {sidebarData && (
+            <>
+              {sidebarData.recentPosts && sidebarData.recentPosts.length > 0 && (
+                <section class="widget">
+                  <h3 class="widget-title">最新文章</h3>
+                  <ul class="widget-list">
+                    {sidebarData.recentPosts.map((p) => (
+                      <li><a href={p.permalink}>{p.title}</a></li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {sidebarData.recentComments && sidebarData.recentComments.length > 0 && (
+                <section class="widget">
+                  <h3 class="widget-title">最近回复</h3>
+                  <ul class="widget-list">
+                    {sidebarData.recentComments.map((c) => (
+                      <li><a href={c.permalink}>{c.author}</a>: {c.excerpt}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {sidebarData.categories && sidebarData.categories.length > 0 && (
+                <section class="widget">
+                  <h3 class="widget-title">分类</h3>
+                  <ul class="widget-list">
+                    {sidebarData.categories.map((cat) => (
+                      <li><a href={cat.permalink}>{cat.name} ({cat.count})</a></li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {sidebarData.archives && sidebarData.archives.length > 0 && (
+                <section class="widget">
+                  <h3 class="widget-title">归档</h3>
+                  <ul class="widget-list">
+                    {sidebarData.archives.map((archive) => (
+                      <li><a href={archive.permalink}>{archive.date}</a></li>
+                    ))}
+                  </ul>
+                </section>
+              )}
               <section class="widget">
-                <h3 class="widget-title">最新文章</h3>
+                <h3 class="widget-title">其它</h3>
                 <ul class="widget-list">
-                  {sidebarData.recentPosts.map((p) => (
-                    <li><a href={p.permalink}>{p.title}</a></li>
-                  ))}
+                  {isLoggedIn ? (
+                    <>
+                      <li class="last">
+                        <a href={urls.adminUrl}>进入后台 ({user?.screenName || user?.name})</a>
+                      </li>
+                      <li><form method="post" action={urls.logoutUrl} class="logout-form"><button type="submit">退出</button></form></li>
+                    </>
+                  ) : (
+                    <li class="last"><a href={urls.loginUrl}>登录</a></li>
+                  )}
+                  <li><a href={urls.feedUrl}>文章 RSS</a></li>
+                  <li><a href={urls.commentsFeedUrl}>评论 RSS</a></li>
                 </ul>
               </section>
-            )}
-            {sidebarData.recentComments && sidebarData.recentComments.length > 0 && (
-              <section class="widget">
-                <h3 class="widget-title">最近回复</h3>
-                <ul class="widget-list">
-                  {sidebarData.recentComments.map((c) => (
-                    <li><a href={c.permalink}>{c.author}</a>: {c.excerpt}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {sidebarData.categories && sidebarData.categories.length > 0 && (
-              <section class="widget">
-                <h3 class="widget-title">分类</h3>
-                <ul class="widget-list">
-                  {sidebarData.categories.map((cat) => (
-                    <li><a href={cat.permalink}>{cat.name} ({cat.count})</a></li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {sidebarData.archives && sidebarData.archives.length > 0 && (
-              <section class="widget">
-                <h3 class="widget-title">归档</h3>
-                <ul class="widget-list">
-                  {sidebarData.archives.map((archive) => (
-                    <li><a href={archive.permalink}>{archive.date}</a></li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            <section class="widget">
-              <h3 class="widget-title">其它</h3>
-              <ul class="widget-list">
-                {isLoggedIn ? (
-                  <>
-                    <li class="last">
-                      <a href={urls.adminUrl}>进入后台 ({user?.screenName || user?.name})</a>
-                    </li>
-                    <li><form method="post" action={urls.logoutUrl} class="logout-form"><button type="submit">退出</button></form></li>
-                  </>
-                ) : (
-                  <li class="last"><a href={urls.loginUrl}>登录</a></li>
-                )}
-                <li><a href={urls.feedUrl}>文章 RSS</a></li>
-                <li><a href={urls.commentsFeedUrl}>评论 RSS</a></li>
-              </ul>
-            </section>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   </div>
@@ -272,20 +271,15 @@ const processedPosts = posts.map(processPost);
 </Base>
 
 <style>
-/* 覆盖层透明 */
 .card-overlay {
   z-index: 1;
 }
-
-/* 内部链接置于覆盖层之上 */
 .post-author a,
 .post-meta-details a,
 .post-meta-details span a {
   position: relative;
   z-index: 3;
 }
-
-/* 图片网格布局 */
 .post-images[data-count="1"] {
   grid-template-columns: 1fr;
 }
@@ -294,14 +288,12 @@ const processedPosts = posts.map(processPost);
   width: auto;
   margin: 0 auto;
 }
-
 .post-images[data-count="2"] {
   grid-template-columns: 1fr 1fr;
 }
 .post-images[data-count="2"] img {
   aspect-ratio: 1 / 1;
 }
-
 .post-images[data-count="3"],
 .post-images[data-count="5"],
 .post-images[data-count="6"],
@@ -318,14 +310,12 @@ const processedPosts = posts.map(processPost);
 .post-images[data-count="9"] img {
   aspect-ratio: 1 / 1;
 }
-
 .post-images[data-count="4"] {
   grid-template-columns: 1fr 1fr;
 }
 .post-images[data-count="4"] img {
   aspect-ratio: 1 / 1;
 }
-
 @media (max-width: 768px) {
   .post-images {
     max-width: 100% !important;
@@ -340,5 +330,4 @@ const processedPosts = posts.map(processPost);
 }
 </style>
 
-<!-- 引入 LivePhoto + Lightbox 插件 -->
 <script is:inline src="/js/live.js"></script>
