@@ -19,13 +19,19 @@ export default defineConfig({
     csp: {
       directives: [
         "default-src 'self'",
-        "script-src 'self' https://static.cloudflareinsights.com",
-        "style-src 'self' 'unsafe-inline'",
         "media-src 'self' https://files.atlinker.cn",
         "img-src 'self' data: blob:",
         "connect-src 'self' https://static.cloudflareinsights.com",
         "font-src 'self' data:",
       ],
+      scriptDirective: {
+        src: ["'self'", "https://static.cloudflareinsights.com"],
+        unsafeInline: true
+      },
+      styleDirective: {
+        src: ["'self'"],
+        unsafeInline: true,
+      },
     },
   },
   integrations: [themeLoader(), pluginLoader(), clientLoader()],
@@ -34,4 +40,4 @@ export default defineConfig({
       alias: sharedAliases,
     },
   },
-})
+});
