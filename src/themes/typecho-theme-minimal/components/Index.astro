@@ -160,38 +160,24 @@ const processedPosts = posts.map(processPost);
                       style="margin-top: 12px; margin-left: 48px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%; position: relative; z-index: 2;"
                     >
                       {post.mediaItems.map((item) => {
-                        // 普通图片
+                        // 如果是普通图片
                         if (item.type === 'image') {
-                          // 单张普通图片：完整显示，保持比例，最大高度300px，居中
-                          if (post.mediaItems.length === 1) {
-                            return (
-                              <img
-                                src={item.src}
-                                alt="配图"
-                                loading="lazy"
-                                class="lightbox-img"
-                                style="max-width: 100%; max-height: 300px; width: auto; height: auto; display: block; margin: 0 auto; cursor: pointer;"
-                              />
-                            );
-                          } else {
-                            // 多张普通图片：正方形裁剪
-                            return (
-                              <img
-                                src={item.src}
-                                alt="配图"
-                                loading="lazy"
-                                class="lightbox-img"
-                                style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer;"
-                              />
-                            );
-                          }
+                          return (
+                            <img
+                              src={item.src}
+                              alt="配图"
+                              loading="lazy"
+                              class="lightbox-img"
+                              style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer;"
+                            />
+                          );
                         } else {
-                          // LivePhoto
+                          // LivePhoto: 判断是否为单图且仅此一项
                           if (post.mediaItems.length === 1) {
-                            // 单张 LivePhoto：直接插入容器，不额外包裹
+                            // 单张 LivePhoto: 直接渲染容器，不额外包裹
                             return <div set:html={item.html} style="width: 100%;" />;
                           } else {
-                            // 多张 LivePhoto：强制正方形
+                            // 多张 LivePhoto: 强制正方形
                             return (
                               <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
                                 <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
@@ -298,11 +284,16 @@ const processedPosts = posts.map(processPost);
   position: relative;
   z-index: 3;
 }
-/* 单图：普通图片自适应，完整显示，居中，最大高度300px */
+/* 单图：普通图片自适应 */
 .post-images[data-count="1"] {
   grid-template-columns: 1fr;
 }
-/* 单图 LivePhoto：宽度100%，高度由padding-top撑起，无需额外限制 */
+.post-images[data-count="1"] img {
+  max-height: 300px;
+  width: auto;
+  margin: 0 auto;
+}
+/* 单图 LivePhoto：让容器自身适应，不额外限制 */
 .post-images[data-count="1"] .live-photo {
   width: 100%;
   height: auto;
@@ -337,6 +328,20 @@ const processedPosts = posts.map(processPost);
 .post-images[data-count="4"] img {
   aspect-ratio: 1 / 1;
 }
+
+/* ===== 新增：多图时 LivePhoto 强制填满正方形，覆盖 padding-top ===== */
+.post-images[data-count]:not([data-count="1"]) .live-photo {
+  padding-top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.post-images[data-count]:not([data-count="1"]) .live-photo img,
+.post-images[data-count]:not([data-count="1"]) .live-photo video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
 @media (max-width: 768px) {
   .post-images {
     max-width: 100% !important;
