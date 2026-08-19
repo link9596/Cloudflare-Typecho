@@ -17,17 +17,34 @@ const {
 const isIndex = currentPath === '/';
 
 const processPost = (post: any) => {
-  const imgRegex = /<img[^>]+src="([^">]+)"/g;
-  let match;
-  const images: string[] = [];
   let excerpt = post.excerpt || '';
+  const images: string[] = [];
+
+  // 1. 提取并移除 LivePhoto 容器（class 含 live-photo-wrapper）
+  const livePhotoRegex = /<div[^>]*class="[^"]*live-photo-wrapper[^"]*"[^>]*>[\s\S]*?<\/div>/g;
+  let match;
+  while ((match = livePhotoRegex.exec(excerpt)) !== null) {
+    // 从匹配的容器中提取 <img> 的 src
+    const imgMatch = match[0].match(/<img[^>]*src="([^">]+)"/);
+    if (imgMatch) {
+      images.push(imgMatch[1]);
+    }
+  }
+  // 移除所有 LivePhoto 容器
+  excerpt = excerpt.replace(livePhotoRegex, '');
+
+  // 2. 提取剩余普通图片（原有逻辑）
+  const imgRegex = /<img[^>]+src="([^">]+)"/g;
   while ((match = imgRegex.exec(excerpt)) !== null) {
     images.push(match[1]);
   }
-  if (images.length > 0) {
-    excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
-  }
+  // 移除所有 img 标签（使摘要只保留纯文本）
+  excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
 
+  // 3. 去重（避免同一张图片重复出现）
+  const uniqueImages = [...new Set(images)];
+
+  // 头像处理（与原逻辑一致）
   const email = post.author?.mail || '';
   let avatarUrl = 'https://seccdn.libravatar.org/avatar/17885ae2e792de13ef1b68309799f7e4?d=404';
   if (email) {
@@ -35,7 +52,7 @@ const processPost = (post: any) => {
     avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;
   }
 
-  return { ...post, images, excerpt, avatarUrl, imageCount: images.length };
+  return { ...post, images: uniqueImages, excerpt, avatarUrl, imageCount: uniqueImages.length };
 };
 
 const processedPosts = posts.map(processPost);
@@ -133,6 +150,7 @@ const processedPosts = posts.map(processPost);
                     </div>
                   </div>
 
+                  <!-- 摘要（已移除所有图片和 LivePhoto 容器） -->
                   <div
                     class="post-excerpt"
                     itemprop="articleBody"
@@ -140,7 +158,7 @@ const processedPosts = posts.map(processPost);
                     style="margin-top: 26px; padding-left: 48px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word; position: relative; z-index: 0;"
                   />
 
-                  <!-- 图片网格（置于覆盖层之上，点击不会触发跳转） -->
+                  <!-- 图片网格（包含从 LivePhoto 和普通图片提取的图片） -->
                   {post.images.length > 0 && (
                     <div
                       class="post-images"
