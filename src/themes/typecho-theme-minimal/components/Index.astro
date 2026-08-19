@@ -18,33 +18,42 @@ const isIndex = currentPath === '/';
 
 const processPost = (post: any) => {
   let excerpt = post.excerpt || '';
-  const images: string[] = [];
+  const mediaItems: { src: string; video?: string; isLivePhoto: boolean }[] = [];
 
-  // 1. 提取并移除 LivePhoto 容器（class 含 live-photo-wrapper）
+  // 1. 提取 LivePhoto 容器（class 含 live-photo-wrapper）
   const livePhotoRegex = /<div[^>]*class="[^"]*live-photo-wrapper[^"]*"[^>]*>[\s\S]*?<\/div>/g;
   let match;
   while ((match = livePhotoRegex.exec(excerpt)) !== null) {
-    // 从匹配的容器中提取 <img> 的 src
-    const imgMatch = match[0].match(/<img[^>]*src="([^">]+)"/);
+    const html = match[0];
+    // 提取图片 src
+    const imgMatch = html.match(/<img[^>]*src="([^">]+)"/);
+    // 提取视频 src（优先从 <source>，其次从 video 的 src 属性）
+    const videoMatch = html.match(/<video[^>]*>[\s\S]*?<source[^>]*src="([^">]+)"/) ||
+                       html.match(/<video[^>]*src="([^">]+)"/);
     if (imgMatch) {
-      images.push(imgMatch[1]);
+      mediaItems.push({
+        src: imgMatch[1],
+        video: videoMatch ? videoMatch[1] : undefined,
+        isLivePhoto: true,
+      });
     }
   }
   // 移除所有 LivePhoto 容器
   excerpt = excerpt.replace(livePhotoRegex, '');
 
-  // 2. 提取剩余普通图片（原有逻辑）
-  const imgRegex = /<img[^>]+src="([^">]+)"/g;
+  // 2. 提取普通图片
+  const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
   while ((match = imgRegex.exec(excerpt)) !== null) {
-    images.push(match[1]);
+    mediaItems.push({
+      src: match[1],
+      video: undefined,
+      isLivePhoto: false,
+    });
   }
-  // 移除所有 img 标签（使摘要只保留纯文本）
+  // 移除所有 img 标签，使摘要只保留纯文本
   excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
 
-  // 3. 去重（避免同一张图片重复出现）
-  const uniqueImages = [...new Set(images)];
-
-  // 头像处理（与原逻辑一致）
+  // 3. 头像处理
   const email = post.author?.mail || '';
   let avatarUrl = 'https://seccdn.libravatar.org/avatar/17885ae2e792de13ef1b68309799f7e4?d=404';
   if (email) {
@@ -52,7 +61,7 @@ const processPost = (post: any) => {
     avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;
   }
 
-  return { ...post, images: uniqueImages, excerpt, avatarUrl, imageCount: uniqueImages.length };
+  return { ...post, excerpt, mediaItems, avatarUrl };
 };
 
 const processedPosts = posts.map(processPost);
@@ -150,7 +159,7 @@ const processedPosts = posts.map(processPost);
                     </div>
                   </div>
 
-                  <!-- 摘要（已移除所有图片和 LivePhoto 容器） -->
+                  <!-- 摘要（纯文本，已移除所有图片） -->
                   <div
                     class="post-excerpt"
                     itemprop="articleBody"
@@ -158,20 +167,21 @@ const processedPosts = posts.map(processPost);
                     style="margin-top: 26px; padding-left: 48px; font-size: 15px; line-height: 1.7; color: #4e5969; word-break: break-word; position: relative; z-index: 0;"
                   />
 
-                  <!-- 图片网格（包含从 LivePhoto 和普通图片提取的图片） -->
-                  {post.images.length > 0 && (
+                  <!-- 图片网格（包含普通图片和 LivePhoto 图片） -->
+                  {post.mediaItems.length > 0 && (
                     <div
                       class="post-images"
-                      data-count={post.imageCount}
+                      data-count={post.mediaItems.length}
                       style="margin-top: 12px; margin-left: 48px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%; position: relative; z-index: 2;"
                     >
-                      {post.images.map((src: string) => (
+                      {post.mediaItems.map((item) => (
                         <img
-                          src={src}
-                          alt="文章配图"
+                          src={item.src}
+                          alt="配图"
                           loading="lazy"
-                          class="lightbox-img"
-                          style="width: 100%; object-fit: cover; display: block; cursor: pointer;"
+                          class={item.isLivePhoto ? 'live-photo-img lightbox-img' : 'lightbox-img'}
+                          data-video-src={item.video || undefined}
+                          style="width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer;"
                         />
                       ))}
                     </div>
@@ -322,7 +332,7 @@ const processedPosts = posts.map(processPost);
     margin-left: 0 !important;
   }
   .post-excerpt {
-    padding:  0 16px 0 16px !important;
+    padding: 0 16px 0 16px !important;
   }
   .post-header {
     flex-wrap: wrap;
@@ -330,5 +340,5 @@ const processedPosts = posts.map(processPost);
 }
 </style>
 
-<!-- 引入 Lightbox 插件 -->
+<!-- 引入 LivePhoto + Lightbox 插件 -->
 <script is:inline src="/js/live.js"></script>
