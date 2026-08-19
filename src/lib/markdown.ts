@@ -17,10 +17,11 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
     'del', 'ins', 'details', 'summary', 'figure', 'figcaption',
-    'video', 'audio', 'source', 'iframe',
+    'video', 'audio', 'source', 'iframe', 'div',
   ]),
   allowedAttributes: {
-    ...sanitizeHtml.defaults.allowedAttributes,
+    // 允许所有标签拥有 class, id, style
+    '*': ['class', 'id', 'style'],
     img: ['src', 'alt', 'title', 'width', 'height', 'loading'],
     a: ['href', 'title', 'target', 'rel'],
     code: ['class'],
@@ -28,9 +29,10 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     td: ['align', 'valign'],
     th: ['align', 'valign'],
     iframe: ['src', 'width', 'height', 'frameborder', 'allowfullscreen'],
-    video: ['src', 'controls', 'width', 'height'],
+    video: ['src', 'controls', 'width', 'height', 'playsinline', 'muted', 'preload', 'class', 'style'],
     audio: ['src', 'controls'],
     source: ['src', 'type'],
+    div: ['class', 'id', 'style'],
   },
   allowedIframeHostnames: ['www.youtube.com', 'player.bilibili.com', 'player.vimeo.com'],
 };
@@ -96,23 +98,20 @@ export function stripHtmlTags(html: string): string {
   return html.replace(HTML_TAG_RE, ' ').replace(WHITESPACE_RE, ' ').trim();
 }
 
-// ─── 辅助函数：计算 padding-top 百分比（兼容老旧浏览器） ──────────────
+// ─── 辅助函数：计算 padding-top 百分比 ──────────────────────────────────────
 
 function getPaddingTop(ratio: string): string {
   const parts = ratio.split('/').map(Number);
   if (parts.length !== 2 || parts.some(isNaN) || parts[0] === 0) {
-    return '100%'; // 默认 1:1
+    return '100%';
   }
-  const percent = (parts[1] / parts[0]) * 100;
-  return `${percent}%`;
+  return `${(parts[1] / parts[0]) * 100}%`;
 }
 
 // ─── Custom marked extension: LivePhoto ─────────────────────────────────────
 
-// 匹配 [LivePhoto photo="..." video="..." ratio="..."]，ratio 默认 3/4
 const LIVE_PHOTO_REGEX = /^\[LivePhoto\s+photo="([^"]+)"\s+video="([^"]+)"(?:\s+ratio="([^"]+)")?\s*\]/;
 
-// 注册扩展
 marked.use({
   extensions: [
     {
