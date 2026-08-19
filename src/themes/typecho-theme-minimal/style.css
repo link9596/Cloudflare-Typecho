@@ -421,11 +421,13 @@ textarea {
 .post-content img, .comment-content img,
 .post-content video, .comment-content video {
   max-width: 100%;
+  border-radius: 6px;
 }
 .post-content a img,
 .comment-content a img {
   background: #FFF;
   position: relative;
+  border-radius: 6px;
   bottom: -4px;  /* hidden img parent link border  */
 }
 .post-content hr, .comment-content hr {
