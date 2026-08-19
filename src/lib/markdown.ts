@@ -96,6 +96,17 @@ export function stripHtmlTags(html: string): string {
   return html.replace(HTML_TAG_RE, ' ').replace(WHITESPACE_RE, ' ').trim();
 }
 
+// ─── 辅助函数：计算 padding-top 百分比（兼容老旧浏览器） ──────────────
+
+function getPaddingTop(ratio: string): string {
+  const parts = ratio.split('/').map(Number);
+  if (parts.length !== 2 || parts.some(isNaN) || parts[0] === 0) {
+    return '100%'; // 默认 1:1
+  }
+  const percent = (parts[1] / parts[0]) * 100;
+  return `${percent}%`;
+}
+
 // ─── Custom marked extension: LivePhoto ─────────────────────────────────────
 
 // 匹配 [LivePhoto photo="..." video="..." ratio="..."]，ratio 默认 3/4
@@ -124,21 +135,21 @@ marked.use({
         }
         return undefined;
       },
-renderer(token: any) {
-  const { photo, video, ratio } = token;
-  const safePhoto = escapeHtml(photo);
-  const safeVideo = escapeHtml(video);
-  const paddingTop = getPaddingTop(ratio);
-  const id = `live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-  const containerStyle = `position:relative; width:100%; padding-top:${paddingTop};`;
-  const innerStyle = `position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;`;
-  return `<div style="${containerStyle}" class="live-photo live-photo-wrapper" id="${id}">
+      renderer(token: any) {
+        const { photo, video, ratio } = token;
+        const safePhoto = escapeHtml(photo);
+        const safeVideo = escapeHtml(video);
+        const paddingTop = getPaddingTop(ratio);
+        const id = `live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const containerStyle = `position:relative; width:100%; padding-top:${paddingTop};`;
+        const innerStyle = `position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;`;
+        return `<div style="${containerStyle}" class="live-photo live-photo-wrapper" id="${id}">
     <img class="live-photo-img" src="${safePhoto}" alt="Live Photo" style="${innerStyle}">
     <video class="live-photo-video" playsinline muted preload="auto" style="${innerStyle}">
         <source src="${safeVideo}" type="video/mp4">
     </video>
 </div>`;
-}
+      },
     },
   ],
 });
