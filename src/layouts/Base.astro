@@ -57,8 +57,7 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
   <slot />
   <Fragment set:html={pluginSnippets.bodyHtml} />
   
-  <!-- Swup 平滑切换 -->
-  <script type="module">
+<script type="module">
     import Swup from 'swup';
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -74,18 +73,27 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
 
         if (swup.hooks && typeof swup.hooks.on === 'function') {
           swup.hooks.on('page:view', function () {
-            // 重新初始化 Lightbox（图片预览）
+            // 重新初始化 Lightbox
             if (window.Lightbox && window.Lightbox.init) {
               window.Lightbox.init('.lightbox-img');
             }
+            // 重新初始化 LivePhoto
+            if (typeof LivePhoto !== 'undefined' && LivePhoto.init) {
+              LivePhoto.init('.live-photo');
+            }
           });
         } else {
-          console.warn('Swup hooks.on not available, Lightbox may not work after navigation.');
+          console.warn('Swup hooks.on not available');
+        }
+
+        // 首次加载初始化
+        if (typeof LivePhoto !== 'undefined' && LivePhoto.init) {
+          LivePhoto.init('.live-photo');
         }
       } catch (error) {
         console.error('Swup initialization failed:', error);
       }
     });
-  </script>
+</script>
 </body>
 </html>
