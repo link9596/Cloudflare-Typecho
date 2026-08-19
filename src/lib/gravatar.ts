@@ -19,5 +19,5 @@ export async function buildGravatarUrl(
   params.set('d', defaultImage);
   params.set('s', String(size));
   if (rating) params.set('r', rating);
-  return `https://www.gravatar.com/avatar/${hash}?${params.toString()}`;
+  return `https://seccdn.libravatar.org/avatar/${hash}?${params.toString()}`;
 }
