@@ -171,15 +171,22 @@ const processedPosts = posts.map(processPost);
                             />
                           );
                         } else {
-                          // LivePhoto：直接插入完整容器，但容器可能被网格压缩，我们设置容器宽高100%并让内部元素适应
-                          // 但容器内部有 padding-top，会撑高，所以需要覆盖样式
-                          // 我们在这个外层 div 上设置 aspect-ratio: 1/1; overflow: hidden;
-                          // 然后让内部容器 width:100%; height:100%; 并调整内部的 padding-top 行为
-                          return (
-                            <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
-                              <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
-                            </div>
-                          );
+                          // LivePhoto
+                          if (post.mediaItems.length === 1) {
+                            // 单张 LivePhoto：自适应比例，最大高度 300px
+                            return (
+                              <div style="display: flex; justify-content: center; max-height: 300px; width: 100%;">
+                                <div set:html={item.html} style="height: auto; max-height: 300px; width: auto; max-width: 100%;" />
+                              </div>
+                            );
+                          } else {
+                            // 多张 LivePhoto：强制正方形
+                            return (
+                              <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
+                                <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+                              </div>
+                            );
+                          }
                         }
                       })}
                     </div>
@@ -280,6 +287,7 @@ const processedPosts = posts.map(processPost);
   position: relative;
   z-index: 3;
 }
+/* 单图：普通图片自适应 */
 .post-images[data-count="1"] {
   grid-template-columns: 1fr;
 }
@@ -288,6 +296,15 @@ const processedPosts = posts.map(processPost);
   width: auto;
   margin: 0 auto;
 }
+/* 单图：LivePhoto 自适应（已在内联样式中控制，这里仅确保网格不干扰） */
+.post-images[data-count="1"] .live-photo {
+  height: auto;
+  max-height: 300px;
+  width: auto;
+  max-width: 100%;
+}
+
+/* 多图正方形网格（原有） */
 .post-images[data-count="2"] {
   grid-template-columns: 1fr 1fr;
 }
