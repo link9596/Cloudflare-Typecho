@@ -16,6 +16,8 @@ export default defineConfig({
   }),
   security: {
     checkOrigin: true,
+  },
+  experimental: {
     csp: {
       directives: [
         "default-src 'self'",
@@ -25,11 +27,17 @@ export default defineConfig({
         "font-src 'self' data:",
       ],
       scriptDirective: {
-        src: ["'self'", "https://static.cloudflareinsights.com"],
+        resources: [
+          "'self'",
+          "https://static.cloudflareinsights.com",
+          "'unsafe-inline'"
+        ],
       },
       styleDirective: {
-        src: ["'self'"],
-        unsafeInline: true,
+        resources: [
+          "'self'",
+          "'unsafe-inline'"
+        ],
       },
     },
   },
