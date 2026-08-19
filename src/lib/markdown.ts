@@ -96,6 +96,50 @@ export function stripHtmlTags(html: string): string {
   return html.replace(HTML_TAG_RE, ' ').replace(WHITESPACE_RE, ' ').trim();
 }
 
+// ─── Custom marked extension: LivePhoto ─────────────────────────────────────
+
+// 匹配 [LivePhoto photo="..." video="..." ratio="..."]，ratio 默认 3/4
+const LIVE_PHOTO_REGEX = /^\[LivePhoto\s+photo="([^"]+)"\s+video="([^"]+)"(?:\s+ratio="([^"]+)")?\s*\]/;
+
+// 注册扩展
+marked.use({
+  extensions: [
+    {
+      name: 'livephoto',
+      level: 'block',
+      start(src: string) {
+        return src.match(/\[LivePhoto/)?.index;
+      },
+      tokenizer(src: string) {
+        const match = src.match(LIVE_PHOTO_REGEX);
+        if (match) {
+          const [, photo, video, ratio = '3/4'] = match;
+          return {
+            type: 'livephoto',
+            raw: match[0],
+            photo,
+            video,
+            ratio,
+          };
+        }
+        return undefined;
+      },
+      renderer(token: any) {
+        const { photo, video, ratio } = token;
+        const style = `aspect-ratio: ${ratio};`;
+        const safePhoto = escapeHtml(photo);
+        const safeVideo = escapeHtml(video);
+        return `<div style="${style}" class="live-photo" id="myLivePhoto">
+    <img class="live-photo-img" src="${safePhoto}" alt="...">
+    <video class="live-photo-video" playsinline muted preload="auto">
+        <source src="${safeVideo}" type="video/mp4">
+    </video>
+</div>`;
+      },
+    },
+  ],
+});
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
