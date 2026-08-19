@@ -60,6 +60,14 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
 <script type="module">
     import Swup from 'swup';
 
+        // 首次加载初始化
+        if (typeof LivePhoto !== 'undefined' && LivePhoto.init) {
+          LivePhoto.init('.live-photo');
+        }
+      } catch (error) {
+        console.error('Swup initialization failed:', error);
+      }
+
     document.addEventListener('DOMContentLoaded', function () {
       try {
         const swup = new Swup({
@@ -85,14 +93,6 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
         } else {
           console.warn('Swup hooks.on not available');
         }
-
-        // 首次加载初始化
-        if (typeof LivePhoto !== 'undefined' && LivePhoto.init) {
-          LivePhoto.init('.live-photo');
-        }
-      } catch (error) {
-        console.error('Swup initialization failed:', error);
-      }
     });
 </script>
 </body>
