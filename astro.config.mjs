@@ -15,7 +15,7 @@ export default defineConfig({
     inspectorPort: isBuild ? false : undefined,
   }),
   security: {
-    checkOrigin: true,
+    checkOrigin: false,
     csp: {
       directives: [
         "default-src 'self'",
