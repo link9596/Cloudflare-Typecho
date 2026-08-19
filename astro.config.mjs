@@ -18,7 +18,7 @@ export default defineConfig({
     checkOrigin: true,
     csp: {
       directives: {
-        "media-src": ["'self'", "https://files.atlinker.cn"],
+        ["media-src", "'self'", "https://files.atlinker.cn"],
       },
     },
   },
