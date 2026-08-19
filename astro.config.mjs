@@ -17,9 +17,9 @@ export default defineConfig({
   security: {
     checkOrigin: true,
     csp: {
-      directives: [
-        ["media-src", "'self'", "https://files.atlinker.cn"],
-      ],
+      directives: {
+        "media-src": ["'self'", "https://files.atlinker.cn"],
+      },
     },
   },
   integrations: [themeLoader(), pluginLoader(), clientLoader()],
@@ -28,4 +28,4 @@ export default defineConfig({
       alias: sharedAliases,
     },
   },
-});
+})
