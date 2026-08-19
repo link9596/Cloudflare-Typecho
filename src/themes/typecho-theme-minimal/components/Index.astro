@@ -160,6 +160,7 @@ const processedPosts = posts.map(processPost);
                       style="margin-top: 12px; margin-left: 48px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%; position: relative; z-index: 2;"
                     >
                       {post.mediaItems.map((item) => {
+                        // 如果是普通图片
                         if (item.type === 'image') {
                           return (
                             <img
@@ -171,16 +172,12 @@ const processedPosts = posts.map(processPost);
                             />
                           );
                         } else {
-                          // LivePhoto
+                          // LivePhoto: 判断是否为单图且仅此一项
                           if (post.mediaItems.length === 1) {
-                            // 单张 LivePhoto：自适应比例，最大高度 300px
-                            return (
-                              <div style="display: flex; justify-content: center; max-height: 300px; width: 100%;">
-                                <div set:html={item.html} style="height: auto; max-height: 300px; width: auto; max-width: 100%;" />
-                              </div>
-                            );
+                            // 单张 LivePhoto: 直接渲染容器，不额外包裹
+                            return <div set:html={item.html} style="width: 100%;" />;
                           } else {
-                            // 多张 LivePhoto：强制正方形
+                            // 多张 LivePhoto: 强制正方形
                             return (
                               <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
                                 <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
@@ -296,12 +293,10 @@ const processedPosts = posts.map(processPost);
   width: auto;
   margin: 0 auto;
 }
-/* 单图：LivePhoto 自适应（已在内联样式中控制，这里仅确保网格不干扰） */
+/* 单图 LivePhoto：让容器自身适应，不额外限制 */
 .post-images[data-count="1"] .live-photo {
+  width: 100%;
   height: auto;
-  max-height: 300px;
-  width: auto;
-  max-width: 100%;
 }
 
 /* 多图正方形网格（原有） */
