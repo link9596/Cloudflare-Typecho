@@ -24,7 +24,7 @@ export function defaultCspDirectives(): CspDirectives {
     'default-src': ["'self'"],
     'img-src': ["'self'", 'data:', 'https://www.gravatar.com', 'https:' , 'https://files.atlinker.cn'],
     'style-src': ["'self'", "'unsafe-inline'"],
-    'script-src': ["'self'", "'unsafe-inline'"],
+    'script-src': ["'self'", "'unsafe-inline'" , 'https://static.cloudflareinsights.com'],
     'font-src': ["'self'", 'data:'],
     'connect-src': ["'self'"],
     'media-src': ["'self'", 'https://files.atlinker.cn'],
