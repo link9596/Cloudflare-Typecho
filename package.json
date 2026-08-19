@@ -41,7 +41,8 @@
     "typecho-plugin-turnstile": "file:src/plugins/typecho-plugin-turnstile",
     "typecho-plugin-webdav": "file:src/plugins/typecho-plugin-webdav",
     "typecho-plugin-wechat-publisher": "file:src/plugins/typecho-plugin-wechat-publisher",
-    "typecho-theme-minimal": "file:src/themes/typecho-theme-minimal"
+    "typecho-theme-minimal": "file:src/themes/typecho-theme-minimal",
+    "typecho-plugin-livephoto": "file:src/plugins/typecho-plugin-livephoto"
   },
   "devDependencies": {
     "@libsql/client": "^0.17.4",

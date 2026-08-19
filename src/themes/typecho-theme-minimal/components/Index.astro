@@ -313,11 +313,15 @@ const processedPosts = posts.map(processPost);
 </style>
 
 <!-- 引入 Lightbox 插件 -->
-<script is:inline src="/js/lightboX.js"></script>
+<script is:inline src="/js/lbox-live.js"></script>
 
-<!-- 初始化 Lightbox（使用 .lightbox-img 类） -->
+<!-- 初始化 -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // 初始化 LivePhoto 实例
+    LivePhoto.init('.live-photo');
+
+    // 初始化灯箱，监听所有带 .lightbox-img 类的图片
     Lightbox.init('.lightbox-img');
   });
 </script>

@@ -1,0 +1,20 @@
+{
+  "name": "typecho-plugin-livephoto",
+  "version": "1.0.0",
+  "description": "LivePhoto plugin for Typecho-CF",
+  "keywords": ["typecho", "plugin"],
+  "author": "Your Name",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.ts",
+  "typecho": {
+    "plugin": {
+      "id": "typecho-plugin-livephoto",
+      "name": "LivePhoto 插件",
+      "description": "解析 [LivePhoto] 语法，生成 LivePhoto 播放器",
+      "author": "Your Name",
+      "version": "1.0.0",
+      "tags": ["livephoto", "media"]
+    }
+  }
+}
