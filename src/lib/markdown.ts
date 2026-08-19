@@ -124,18 +124,21 @@ marked.use({
         }
         return undefined;
       },
-      renderer(token: any) {
-        const { photo, video, ratio } = token;
-        const style = `aspect-ratio: ${ratio};`;
-        const safePhoto = escapeHtml(photo);
-        const safeVideo = escapeHtml(video);
-        return `<div style="${style}" class="live-photo" id="myLivePhoto">
-    <img class="live-photo-img" src="${safePhoto}" alt="...">
-    <video class="live-photo-video" playsinline muted preload="auto">
+renderer(token: any) {
+  const { photo, video, ratio } = token;
+  const safePhoto = escapeHtml(photo);
+  const safeVideo = escapeHtml(video);
+  const paddingTop = getPaddingTop(ratio);
+  const id = `live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const containerStyle = `position:relative; width:100%; padding-top:${paddingTop};`;
+  const innerStyle = `position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;`;
+  return `<div style="${containerStyle}" class="live-photo live-photo-wrapper" id="${id}">
+    <img class="live-photo-img" src="${safePhoto}" alt="Live Photo" style="${innerStyle}">
+    <video class="live-photo-video" playsinline muted preload="auto" style="${innerStyle}">
         <source src="${safeVideo}" type="video/mp4">
     </video>
 </div>`;
-      },
+}
     },
   ],
 });

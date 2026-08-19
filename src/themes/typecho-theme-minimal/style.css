@@ -537,12 +537,10 @@ img.alignright {
 .live-photo.is-playing .live-photo-img {
     opacity: 0;
     transform: scale(1.08);
-    border-radius: 6px;
 }
 
 .live-photo.is-playing .live-photo-video {
     transform: scale(1.08);
-    border-radius: 6px;
 }
 
 .live-photo-badge {
@@ -593,6 +591,35 @@ img.alignright {
 
 .live-photo-progress-ring {
     transition: stroke-dashoffset 0.2s linear;
+}
+
+/* 针对列表卡片中的 LivePhoto 容器 */
+.post-list .live-photo-wrapper,
+.archive-list .live-photo-wrapper {
+    display: block;          /* 覆盖可能的 inline-block */
+    width: 100%;
+    height: auto;            /* 高度由 padding-top 撑起 */
+    overflow: hidden;        /* 防止溢出 */
+    background: #000;        /* 可选背景色，替代视频未加载时的白底 */
+}
+
+/* 内部图片视频铺满并保持比例 */
+.post-list .live-photo-wrapper img,
+.post-list .live-photo-wrapper video,
+.archive-list .live-photo-wrapper img,
+.archive-list .live-photo-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* 如果网格项本身有固定的宽高限制，可让容器自适应 */
+.post-list article {
+    /* 确保网格项高度自动，不固定 */
+    height: auto;
 }
 
 /*
