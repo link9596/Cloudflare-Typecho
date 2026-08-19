@@ -171,15 +171,22 @@ const processedPosts = posts.map(processPost);
                             />
                           );
                         } else {
-                          // LivePhoto：直接插入完整容器，但容器可能被网格压缩，我们设置容器宽高100%并让内部元素适应
-                          // 但容器内部有 padding-top，会撑高，所以需要覆盖样式
-                          // 我们在这个外层 div 上设置 aspect-ratio: 1/1; overflow: hidden;
-                          // 然后让内部容器 width:100%; height:100%; 并调整内部的 padding-top 行为
-                          return (
-                            <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
-                              <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
-                            </div>
-                          );
+                          // LivePhoto
+                          if (post.mediaItems.length === 1) {
+                            // 单图：自适应比例，最大高度300px
+                            return (
+                              <div style="display: flex; justify-content: center; max-height: 300px; width: 100%;">
+                                <div set:html={item.html} style="height: auto; max-height: 300px; width: auto; max-width: 100%;" />
+                              </div>
+                            );
+                          } else {
+                            // 多图：强制正方形
+                            return (
+                              <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
+                                <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+                              </div>
+                            );
+                          }
                         }
                       })}
                     </div>
@@ -280,19 +287,33 @@ const processedPosts = posts.map(processPost);
   position: relative;
   z-index: 3;
 }
+/* 单图：自适应比例，最大高度300px */
 .post-images[data-count="1"] {
   grid-template-columns: 1fr;
+  max-height: 300px;
 }
 .post-images[data-count="1"] img {
-  max-height: 300px;
   width: auto;
+  max-height: 300px;
+  object-fit: contain;
   margin: 0 auto;
 }
+.post-images[data-count="1"] .live-photo {
+  height: auto;
+  max-height: 300px;
+  width: auto;
+  max-width: 100%;
+}
+/* 多图：正方形网格 */
 .post-images[data-count="2"] {
   grid-template-columns: 1fr 1fr;
 }
-.post-images[data-count="2"] img {
+.post-images[data-count="2"] img,
+.post-images[data-count="2"] .live-photo {
   aspect-ratio: 1 / 1;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
 .post-images[data-count="3"],
 .post-images[data-count="5"],
@@ -303,18 +324,31 @@ const processedPosts = posts.map(processPost);
   grid-template-columns: repeat(3, 1fr);
 }
 .post-images[data-count="3"] img,
+.post-images[data-count="3"] .live-photo,
 .post-images[data-count="5"] img,
+.post-images[data-count="5"] .live-photo,
 .post-images[data-count="6"] img,
+.post-images[data-count="6"] .live-photo,
 .post-images[data-count="7"] img,
+.post-images[data-count="7"] .live-photo,
 .post-images[data-count="8"] img,
-.post-images[data-count="9"] img {
+.post-images[data-count="8"] .live-photo,
+.post-images[data-count="9"] img,
+.post-images[data-count="9"] .live-photo {
   aspect-ratio: 1 / 1;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
 .post-images[data-count="4"] {
   grid-template-columns: 1fr 1fr;
 }
-.post-images[data-count="4"] img {
+.post-images[data-count="4"] img,
+.post-images[data-count="4"] .live-photo {
   aspect-ratio: 1 / 1;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
 @media (max-width: 768px) {
   .post-images {
@@ -331,3 +365,46 @@ const processedPosts = posts.map(processPost);
 </style>
 
 <script is:inline src="/js/live.js"></script>
+<script type="module">
+  import Swup from 'swup';
+
+  function initLightbox() {
+    if (window.Lightbox && typeof window.Lightbox.init === 'function') {
+      window.Lightbox.init('.lightbox-img');
+    }
+  }
+
+  function initLivePhoto() {
+    if (typeof LivePhoto !== 'undefined' && typeof LivePhoto.init === 'function') {
+      LivePhoto.init('.live-photo');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    try {
+      const swup = new Swup({
+        containers: ['#main', '#secondary', '#header', '#footer'],
+        cache: true,
+        linkSelector: 'a[href^="/"], a[href^="' + window.location.origin + '/"]',
+        smoothScrolling: true,
+        animationDuration: 400,
+      });
+      window.swup = swup;
+
+      // 首次加载初始化
+      initLightbox();
+      initLivePhoto();
+
+      if (swup.hooks && typeof swup.hooks.on === 'function') {
+        swup.hooks.on('page:view', function () {
+          initLightbox();
+          initLivePhoto();
+        });
+      } else {
+        console.warn('Swup hooks.on not available');
+      }
+    } catch (error) {
+      console.error('Swup initialization failed:', error);
+    }
+  });
+</script>
