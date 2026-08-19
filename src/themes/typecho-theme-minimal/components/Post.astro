@@ -304,3 +304,17 @@ const totalComments = commentPagination.totalComments;
     由 <a href="https://github.com/eslizn/typecho-cf">Typecho CF</a> 强力驱动.
   </footer>
 </Base>
+
+<!-- 引入 Lightbox 插件 -->
+<script is:inline src="/js/live.js"></script>
+
+<!-- 初始化 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 初始化 LivePhoto 实例
+    LivePhoto.init('.live-photo');
+
+    // 初始化灯箱，监听所有带 .lightbox-img 类的图片
+    Lightbox.init('.lightbox-img');
+  });
+</script>
