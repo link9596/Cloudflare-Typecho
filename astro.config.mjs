@@ -20,17 +20,16 @@ export default defineConfig({
       directives: [
         "default-src 'self'",
         "media-src 'self' https://files.atlinker.cn",
-        "img-src 'self' data: blob:",
+        "img-src 'self' data: blob: https://files.atlinker.cn",
         "connect-src 'self' https://static.cloudflareinsights.com",
         "font-src 'self' data:",
       ],
       scriptDirective: {
         src: ["'self'", "https://static.cloudflareinsights.com"],
-        unsafeInline: true
       },
       styleDirective: {
         src: ["'self'"],
-        unsafeInline: true,
+        unsafeInline: true, // live.js 动态设置内联样式必需
       },
     },
   },
