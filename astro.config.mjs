@@ -17,30 +17,6 @@ export default defineConfig({
   security: {
     checkOrigin: true,
   },
-  experimental: {
-    csp: {
-      directives: [
-        "default-src 'self'",
-        "media-src 'self' https://files.atlinker.cn",
-        "img-src 'self' data: blob: https://files.atlinker.cn",
-        "connect-src 'self' https://static.cloudflareinsights.com",
-        "font-src 'self' data:",
-      ],
-      scriptDirective: {
-        resources: [
-          "'self'",
-          "https://static.cloudflareinsights.com",
-          "'unsafe-inline'"
-        ],
-      },
-      styleDirective: {
-        resources: [
-          "'self'",
-          "'unsafe-inline'"
-        ],
-      },
-    },
-  },
   integrations: [themeLoader(), pluginLoader(), clientLoader()],
   vite: {
     resolve: {
