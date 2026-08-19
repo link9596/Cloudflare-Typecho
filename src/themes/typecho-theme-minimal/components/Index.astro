@@ -18,16 +18,25 @@ const isIndex = currentPath === '/';
 
 const processPost = (post: any) => {
   let excerpt = post.excerpt || '';
-  const mediaItems: { type: 'image' | 'livephoto'; html: string; src?: string }[] = [];
+  const mediaItems: { type: 'image' | 'livephoto'; html: string; src?: string; videoSrc?: string }[] = [];
 
-  // 1. 提取 LivePhoto 容器（保留完整 HTML）
-  const livePhotoRegex = /<div[^>]*class="[^"]*live-photo-wrapper[^"]*"[^>]*>[\s\S]*?<\/div>/g;
+  // 1. 提取 LivePhoto 容器
+  const livePhotoRegex = /<div[^>]*class="[^"]*live-photo[^"]*"[^>]*>[\s\S]*?<\/div>/g;
   let match;
   while ((match = livePhotoRegex.exec(excerpt)) !== null) {
-    mediaItems.push({
-      type: 'livephoto',
-      html: match[0],
-    });
+    const html = match[0];
+    // 提取图片 src 和视频 src（用于重新构造）
+    const imgMatch = html.match(/<img[^>]*src="([^">]+)"/);
+    const videoMatch = html.match(/<video[^>]*>[\s\S]*?<source[^>]*src="([^">]+)"/) ||
+                       html.match(/<video[^>]*src="([^">]+)"/);
+    if (imgMatch) {
+      mediaItems.push({
+        type: 'livephoto',
+        html: html,                 // 原始容器（单图时使用）
+        src: imgMatch[1],
+        videoSrc: videoMatch ? videoMatch[1] : undefined,
+      });
+    }
   }
   excerpt = excerpt.replace(livePhotoRegex, '');
 
@@ -38,6 +47,7 @@ const processPost = (post: any) => {
       type: 'image',
       src: match[1],
       html: '',
+      videoSrc: undefined,
     });
   }
   excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
@@ -54,6 +64,17 @@ const processPost = (post: any) => {
 };
 
 const processedPosts = posts.map(processPost);
+
+// 辅助：生成正方形 LivePhoto 容器（多图使用）
+function buildSquareLivePhoto(src: string, videoSrc?: string): string {
+  // 保证所有属性完整，结构与原始一致
+  return `<div style="position:relative; width:100%; padding-top:100%;" class="live-photo">
+    <img class="live-photo-img" src="${src}" alt="Live Photo" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;">
+    <video class="live-photo-video" playsinline muted preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;">
+        <source src="${videoSrc || ''}" type="video/mp4">
+    </video>
+</div>`;
+}
 ---
 
 <Base options={options} urls={urls} user={user} isLoggedIn={isLoggedIn} pluginCtx={pluginCtx}>
@@ -160,8 +181,8 @@ const processedPosts = posts.map(processPost);
                       style="margin-top: 12px; margin-left: 48px; display: grid; gap: 4px; border-radius: 8px; overflow: hidden; max-width: 50%; position: relative; z-index: 2;"
                     >
                       {post.mediaItems.map((item) => {
-                        // 如果是普通图片
                         if (item.type === 'image') {
+                          // 普通图片
                           return (
                             <img
                               src={item.src}
@@ -172,17 +193,14 @@ const processedPosts = posts.map(processPost);
                             />
                           );
                         } else {
-                          // LivePhoto: 判断是否为单图且仅此一项
+                          // LivePhoto
                           if (post.mediaItems.length === 1) {
-                            // 单张 LivePhoto: 直接渲染容器，不额外包裹
+                            // 单图：直接使用原始容器（保持原比例）
                             return <div set:html={item.html} style="width: 100%;" />;
                           } else {
-                            // 多张 LivePhoto: 强制正方形
-                            return (
-                              <div style="position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden;">
-                                <div set:html={item.html} style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
-                              </div>
-                            );
+                            // 多图：使用正方形容器（padding-top:100%）
+                            const squareHtml = buildSquareLivePhoto(item.src!, item.videoSrc);
+                            return <div set:html={squareHtml} style="width: 100%; height: 100%;" />;
                           }
                         }
                       })}
@@ -284,6 +302,7 @@ const processedPosts = posts.map(processPost);
   position: relative;
   z-index: 3;
 }
+
 /* 单图：普通图片自适应 */
 .post-images[data-count="1"] {
   grid-template-columns: 1fr;
@@ -293,18 +312,22 @@ const processedPosts = posts.map(processPost);
   width: auto;
   margin: 0 auto;
 }
-/* 单图 LivePhoto：让容器自身适应，不额外限制 */
+/* 单图 LivePhoto：容器自适应 */
 .post-images[data-count="1"] .live-photo {
   width: 100%;
   height: auto;
 }
 
-/* 多图正方形网格（原有） */
+/* 多图正方形网格 */
 .post-images[data-count="2"] {
   grid-template-columns: 1fr 1fr;
 }
-.post-images[data-count="2"] img {
+.post-images[data-count="2"] img,
+.post-images[data-count="2"] .live-photo {
   aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .post-images[data-count="3"],
 .post-images[data-count="5"],
@@ -315,31 +338,31 @@ const processedPosts = posts.map(processPost);
   grid-template-columns: repeat(3, 1fr);
 }
 .post-images[data-count="3"] img,
+.post-images[data-count="3"] .live-photo,
 .post-images[data-count="5"] img,
+.post-images[data-count="5"] .live-photo,
 .post-images[data-count="6"] img,
+.post-images[data-count="6"] .live-photo,
 .post-images[data-count="7"] img,
+.post-images[data-count="7"] .live-photo,
 .post-images[data-count="8"] img,
-.post-images[data-count="9"] img {
+.post-images[data-count="8"] .live-photo,
+.post-images[data-count="9"] img,
+.post-images[data-count="9"] .live-photo {
   aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .post-images[data-count="4"] {
   grid-template-columns: 1fr 1fr;
 }
-.post-images[data-count="4"] img {
+.post-images[data-count="4"] img,
+.post-images[data-count="4"] .live-photo {
   aspect-ratio: 1 / 1;
-}
-
-/* ===== 新增：多图时 LivePhoto 强制填满正方形，覆盖 padding-top ===== */
-.post-images[data-count]:not([data-count="1"]) .live-photo {
-  padding-top: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-.post-images[data-count]:not([data-count="1"]) .live-photo img,
-.post-images[data-count]:not([data-count="1"]) .live-photo video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (max-width: 768px) {
