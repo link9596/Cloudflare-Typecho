@@ -318,6 +318,16 @@ select { border: 1px solid #CCC; height: 28px; }
 /** 列表页选项 */
 .typecho-list-operate { margin: 1em 0; }
 
+/* 选中行高亮 */
+.typecho-list-table tbody tr.checked {
+    background-color: #e3f0ff !important;
+    transition: background 0.15s ease;
+}
+
+.typecho-list-table tbody tr:active {
+    background-color: #d4e4ff;
+}
+
 .typecho-list-operate input, .typecho-list-operate button, .typecho-list-operate select { vertical-align: bottom; }
 
 .typecho-list-operate input[type="checkbox"] { vertical-align: text-top; }
