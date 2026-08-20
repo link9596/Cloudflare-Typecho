@@ -1,7 +1,7 @@
 import type { PluginInitContext } from 'typecho/plugin-sdk';
 
 export default function init({ addHook, pluginId }: PluginInitContext): void {
-  // 前台注入
+  // ========== 前台注入 ==========
   addHook('archive:footer', pluginId, (html: string) => {
     return html + `
 <script>
@@ -29,24 +29,23 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
 `;
   });
 
-  // 后台编辑器注入
+  // ========== 后台编辑器注入 ==========
   const editorUIHtml = `
-<!-- 对话框 -->
-<div id="livephoto-dialog" class="wmd-prompt-dialog" style="display:none; position:fixed; z-index:10000; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.2); padding:20px;">
+<div id="livephoto-dialog" class="wmd-prompt-dialog" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.2); padding:20px; min-width:400px;">
   <div>
     <p><b>插入 Live Photo</b></p>
     <p>请输入图片URL:</p>
     <p><input type="text" id="lp-photo-url" style="width:100%;" placeholder="https://example.com/photo.jpg"></p>
     <p>请输入视频URL:</p>
     <p><input type="text" id="lp-video-url" style="width:100%;" placeholder="https://example.com/video.mp4"></p>
-    <p>请输入宽高比(格式如 3/4，留空则默认3/4):</p>
-    <p><input type="text" id="lp-aspect-ratio" style="width:100%;" placeholder="留空则不添加 ratio"></p>
+    <p>请输入图片比例(如 3/4):</p>
+    <p><input type="text" id="lp-aspect-ratio" style="width:100%;" placeholder="留空默认3/4"></p>
     <p style="margin-top:10px;"></p>
   </div>
-  <form style="margin-top:15px; text-align:right;">
+  <div style="margin-top:15px; text-align:right;">
     <button type="button" class="btn btn-s primary" id="lp-ok">确定</button>
     <button type="button" class="btn btn-s" id="lp-cancel">取消</button>
-  </form>
+  </div>
 </div>
 
 <!-- Fallback 容器 -->
@@ -153,6 +152,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     item.setAttribute('aria-label', '插入 LivePhoto');
     item.style.cursor = 'pointer';
     item.style.padding = '0 4px';
+    item.style.display = 'flex';
     item.style.alignItems = 'center';
     item.style.justifyContent = 'center';
     item.innerHTML = svgIcon;
@@ -205,6 +205,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     }, 100);
   }
 
+  // 初始化
   initDialog();
   initLivePhotoButton();
 })();
