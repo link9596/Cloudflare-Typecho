@@ -624,7 +624,7 @@
             left: 0;
             width: 100px;
             height: 100px;
-            object-fit: contain;
+            object-fit: cover;
             will-change: transform, width, height, top, left, opacity;
             transition: all 0.42s cubic-bezier(0.2, 0.9, 0.4, 1);
             z-index: 10001;
@@ -1156,7 +1156,7 @@
                 left: ${startRect.left}px;
                 width: ${startRect.width}px;
                 height: ${startRect.height}px;
-                object-fit: contain;
+                object-fit: cover;
                 will-change: transform, width, height, top, left, opacity;
                 transition: all 0.42s cubic-bezier(0.2, 0.9, 0.4, 1);
                 z-index: 10001;
