@@ -521,7 +521,6 @@ img.alignright {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: pan-y pinch-zoom;
-    pointer-events: none;
     border-radius: 6px;
 }
 
@@ -536,6 +535,7 @@ img.alignright {
     pointer-events: none;
     transform-origin: center center;
     border-radius: 6px;
+    user-select: none;
 }
 
 .live-photo-img {
