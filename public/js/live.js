@@ -1123,8 +1123,8 @@
             position: fixed;
             top: 24px;
             right: 28px;
-            width: 44px;
-            height: 44px;
+            width: 32px;
+            height: 32px;
             background: rgba(0, 0, 0, .5);
             backdrop-filter: blur(8px);
             border-radius: 50%;
