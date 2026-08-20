@@ -518,7 +518,8 @@ img.alignright {
     position: relative;
     overflow: hidden;
     cursor: pointer;
-    user-select: none;
+    user-select: none !important;
+    -webkit-user-select: none !important;
     -webkit-tap-highlight-color: transparent;
     touch-action: pan-y pinch-zoom;
     border-radius: 6px;
