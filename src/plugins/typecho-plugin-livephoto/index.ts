@@ -1,6 +1,7 @@
 import type { PluginInitContext } from 'typecho/plugin-sdk';
 
 export default function init({ addHook, pluginId }: PluginInitContext): void {
+  // 前台注入
   addHook('archive:footer', pluginId, (html: string) => {
     return html + `
 <script>
@@ -28,8 +29,9 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
 `;
   });
 
-  // ========== 后台编辑器注入 ==========
+  // 后台编辑器注入
   const editorUIHtml = `
+<!-- 对话框 -->
 <div id="livephoto-dialog" class="wmd-prompt-dialog" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.2); padding:20px; min-width:400px;">
   <div>
     <p><b>插入 Live Photo</b></p>
@@ -37,8 +39,8 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     <p><input type="text" id="lp-photo-url" style="width:100%;" placeholder="https://example.com/photo.jpg"></p>
     <p>请输入视频URL:</p>
     <p><input type="text" id="lp-video-url" style="width:100%;" placeholder="https://example.com/video.mp4"></p>
-    <p>请输入宽高比(格式如 3/4):</p>
-    <p><input type="text" id="lp-aspect-ratio" style="width:100%;" placeholder="留空默认为3/4"></p>
+    <p>请输入宽高比(格式如 3/4，留空则默认3/4):</p>
+    <p><input type="text" id="lp-aspect-ratio" style="width:100%;" placeholder="留空则不添加 ratio"></p>
     <p style="margin-top:10px;"></p>
   </div>
   <form style="margin-top:15px; text-align:right;">
@@ -52,6 +54,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
 
 <script is:inline>
 (function() {
+  // ---------- 对话框逻辑 ----------
   function initDialog() {
     var dialog = document.getElementById('livephoto-dialog');
     if (!dialog) return;
@@ -69,8 +72,11 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
         return;
       }
       var ratio = ratioInput.value.trim();
-      if (!ratio) ratio = '3/4';
-      var code = '[LivePhoto photo="' + photo + '" video="' + video + '" ratio="' + ratio + '"]';
+      var code = '[LivePhoto photo="' + photo + '" video="' + video + '"';
+      if (ratio) {
+        code += ' ratio="' + ratio + '"';
+      }
+      code += ']';
 
       var editor = document.getElementById('text');
       if (editor && editor.tagName === 'TEXTAREA') {
@@ -111,22 +117,15 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
 
   // ---------- 定位逻辑 ----------
   function findWmdButtonRow() {
-    // 1. 直接通过 ID
     var row = document.getElementById('wmd-button-row');
     if (row) return row;
-
-    // 2. 通过类名
     row = document.querySelector('ul.wmd-button-row');
     if (row) return row;
-
-    // 3. 在 #wmd-button-bar 中查找 ul
     var bar = document.getElementById('wmd-button-bar');
     if (bar) {
       row = bar.querySelector('ul.wmd-button-row');
       if (row) return row;
     }
-
-    // 4. 遍历所有 ul，查找包含 wmd-button 类的
     var uls = document.querySelectorAll('ul');
     for (var i = 0; i < uls.length; i++) {
       if (uls[i].className && uls[i].className.indexOf('wmd-button') !== -1) {
@@ -136,26 +135,29 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     return null;
   }
 
+  var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0"/><path d="M7 12a5 5 0 1 0 10 0a5 5 0 1 0-10 0m8.9 8.11v.01m3.14-2.51v.01M20.77 14v.01m0-4.01v.01m-1.73-3.62v.01M15.9 3.89v.01M12 3v.01m-3.9.88v.01M4.96 6.39v.01M3.23 10v.01m0 3.99v.01m1.73 3.6v.01m3.14 2.49v.01M12 21v.01"/></g></svg>';
+
   function addLivePhotoButton() {
     var row = findWmdButtonRow();
     if (!row) return false;
-
-    // 防止重复添加
     if (document.getElementById('wmd-livephoto-button')) return true;
 
-    // 添加分隔符
     var spacer = document.createElement('li');
     spacer.className = 'wmd-spacer';
     row.appendChild(spacer);
 
-    // 添加按钮
     var item = document.createElement('li');
     item.id = 'wmd-livephoto-button';
     item.className = 'wmd-button';
     item.title = '插入 LivePhoto';
+    item.setAttribute('aria-label', '插入 LivePhoto');
     item.style.cursor = 'pointer';
-    item.style.padding = '0 6px';
-    item.textContent = 'Live';
+    item.style.padding = '0 4px';
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.justifyContent = 'center';
+    item.innerHTML = svgIcon;
+
     item.addEventListener('click', function() {
       var dialog = document.getElementById('livephoto-dialog');
       if (dialog) {
@@ -164,15 +166,14 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
         if (photoInput) setTimeout(function() { photoInput.focus(); }, 50);
       }
     });
+
     row.appendChild(item);
     return true;
   }
 
   function initLivePhotoButton() {
-    // 立即尝试一次
     if (addLivePhotoButton()) return;
 
-    // 轮询
     var attempts = 0;
     var timer = setInterval(function() {
       attempts++;
@@ -184,9 +185,13 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
         if (container && !container.querySelector('.livephoto-fallback-btn')) {
           var fallbackBtn = document.createElement('button');
           fallbackBtn.className = 'livephoto-fallback-btn';
-          fallbackBtn.textContent = 'Live';
           fallbackBtn.type = 'button';
           fallbackBtn.style.margin = '4px 0';
+          fallbackBtn.style.display = 'inline-flex';
+          fallbackBtn.style.alignItems = 'center';
+          fallbackBtn.style.gap = '4px';
+          fallbackBtn.innerHTML = svgIcon + ' Live图';
+          fallbackBtn.title = '插入 LivePhoto';
           fallbackBtn.addEventListener('click', function() {
             var dialog = document.getElementById('livephoto-dialog');
             if (dialog) {
@@ -201,7 +206,6 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     }, 100);
   }
 
-  // 初始化
   initDialog();
   initLivePhotoButton();
 })();
