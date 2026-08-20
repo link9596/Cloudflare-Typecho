@@ -1,7 +1,6 @@
 import type { PluginInitContext } from 'typecho/plugin-sdk';
 
 export default function init({ addHook, pluginId }: PluginInitContext): void {
-  // ========== 前台注入 ==========
   addHook('archive:footer', pluginId, (html: string) => {
     return html + `
 <script>
@@ -53,7 +52,6 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
 
 <script is:inline>
 (function() {
-  // ---------- 对话框逻辑 ----------
   function initDialog() {
     var dialog = document.getElementById('livephoto-dialog');
     if (!dialog) return;
@@ -71,7 +69,6 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
         return;
       }
       var ratio = ratioInput.value.trim();
-      // 若留空，则使用默认宽高比 3/4
       if (!ratio) ratio = '3/4';
       var code = '[LivePhoto photo="' + photo + '" video="' + video + '" ratio="' + ratio + '"]';
 
@@ -96,14 +93,12 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     okBtn.addEventListener('click', insertLivePhoto);
     cancelBtn.addEventListener('click', function() { dialog.style.display = 'none'; });
 
-    // ESC 关闭
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape' && dialog.style.display !== 'none') {
         dialog.style.display = 'none';
       }
     });
 
-    // 输入框中按 Enter 触发确定
     [photoInput, videoInput, ratioInput].forEach(function(input) {
       input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
@@ -114,89 +109,76 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     });
   }
 
-  // ---------- 定位 ----------
-  function addLivePhotoButton() {
-    // 1. 标准工具栏 #wmd-button-row 中添加
+  // ---------- 定位逻辑 ----------
+  function findWmdButtonRow() {
+    // 1. 直接通过 ID
     var row = document.getElementById('wmd-button-row');
-    if (row) {
-      if (document.getElementById('wmd-livephoto-button')) return true;
+    if (row) return row;
 
-      var spacer = document.createElement('li');
-      spacer.className = 'wmd-spacer';
-      row.appendChild(spacer);
+    // 2. 通过类名
+    row = document.querySelector('ul.wmd-button-row');
+    if (row) return row;
 
-      var item = document.createElement('li');
-      item.id = 'wmd-livephoto-button';
-      item.className = 'wmd-button';
-      item.title = '插入 LivePhoto';
-      item.style.cursor = 'pointer';
-      item.style.padding = '0 6px';
-      item.textContent = 'Live';
-      item.addEventListener('click', function() {
-        var dialog = document.getElementById('livephoto-dialog');
-        if (dialog) {
-          dialog.style.display = 'block';
-          var photoInput = document.getElementById('lp-photo-url');
-          if (photoInput) setTimeout(function() { photoInput.focus(); }, 50);
-        }
-      });
-      row.appendChild(item);
-      return true;
+    // 3. 在 #wmd-button-bar 中查找 ul
+    var bar = document.getElementById('wmd-button-bar');
+    if (bar) {
+      row = bar.querySelector('ul.wmd-button-row');
+      if (row) return row;
     }
 
-    var toolbar = document.querySelector('.editor-toolbar') || document.querySelector('#editor-toolbar');
-    if (toolbar) {
-      if (document.getElementById('wmd-livephoto-button')) return true;
-      var btn = document.createElement('button');
-      btn.id = 'wmd-livephoto-button';
-      btn.textContent = 'Live';
-      btn.type = 'button';
-      btn.className = 'btn btn-sm';
-      btn.style.marginRight = '6px';
-      btn.addEventListener('click', function() {
-        var dialog = document.getElementById('livephoto-dialog');
-        if (dialog) {
-          dialog.style.display = 'block';
-          var photoInput = document.getElementById('lp-photo-url');
-          if (photoInput) setTimeout(function() { photoInput.focus(); }, 50);
-        }
-      });
-      toolbar.appendChild(btn);
-      return true;
+    // 4. 遍历所有 ul，查找包含 wmd-button 类的
+    var uls = document.querySelectorAll('ul');
+    for (var i = 0; i < uls.length; i++) {
+      if (uls[i].className && uls[i].className.indexOf('wmd-button') !== -1) {
+        return uls[i];
+      }
     }
+    return null;
+  }
 
-    // 3. Fallback：在编辑器上方的容器中放置按钮
-    var container = document.getElementById('livephoto-fallback-container');
-    if (container) {
-      if (container.querySelector('.livephoto-fallback-btn')) return true;
-      var fallbackBtn = document.createElement('button');
-      fallbackBtn.className = 'livephoto-fallback-btn';
-      fallbackBtn.textContent = 'Live';
-      fallbackBtn.type = 'button';
-      fallbackBtn.addEventListener('click', function() {
-        var dialog = document.getElementById('livephoto-dialog');
-        if (dialog) {
-          dialog.style.display = 'block';
-          var photoInput = document.getElementById('lp-photo-url');
-          if (photoInput) setTimeout(function() { photoInput.focus(); }, 50);
-        }
-      });
-      container.appendChild(fallbackBtn);
-      return true;
-    }
+  function addLivePhotoButton() {
+    var row = findWmdButtonRow();
+    if (!row) return false;
 
-    return false;
+    // 防止重复添加
+    if (document.getElementById('wmd-livephoto-button')) return true;
+
+    // 添加分隔符
+    var spacer = document.createElement('li');
+    spacer.className = 'wmd-spacer';
+    row.appendChild(spacer);
+
+    // 添加按钮
+    var item = document.createElement('li');
+    item.id = 'wmd-livephoto-button';
+    item.className = 'wmd-button';
+    item.title = '插入 LivePhoto';
+    item.style.cursor = 'pointer';
+    item.style.padding = '0 6px';
+    item.textContent = 'Live';
+    item.addEventListener('click', function() {
+      var dialog = document.getElementById('livephoto-dialog');
+      if (dialog) {
+        dialog.style.display = 'block';
+        var photoInput = document.getElementById('lp-photo-url');
+        if (photoInput) setTimeout(function() { photoInput.focus(); }, 50);
+      }
+    });
+    row.appendChild(item);
+    return true;
   }
 
   function initLivePhotoButton() {
+    // 立即尝试一次
     if (addLivePhotoButton()) return;
 
+    // 轮询
     var attempts = 0;
     var timer = setInterval(function() {
       attempts++;
       if (addLivePhotoButton()) {
         clearInterval(timer);
-      } else if (attempts >= 50) { // 5秒超时，强制显示 Fallback
+      } else if (attempts >= 100) {
         clearInterval(timer);
         var container = document.getElementById('livephoto-fallback-container');
         if (container && !container.querySelector('.livephoto-fallback-btn')) {
@@ -204,6 +186,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
           fallbackBtn.className = 'livephoto-fallback-btn';
           fallbackBtn.textContent = 'Live';
           fallbackBtn.type = 'button';
+          fallbackBtn.style.margin = '4px 0';
           fallbackBtn.addEventListener('click', function() {
             var dialog = document.getElementById('livephoto-dialog');
             if (dialog) {
@@ -219,20 +202,12 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
   }
 
   // 初始化
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      initDialog();
-      initLivePhotoButton();
-    });
-  } else {
-    initDialog();
-    initLivePhotoButton();
-  }
+  initDialog();
+  initLivePhotoButton();
 })();
 <\/script>
 `;
 
-  // 注册后台钩子
   addHook('admin:writePost:bottom', pluginId, (html: string) => html + editorUIHtml);
   addHook('admin:writePage:bottom', pluginId, (html: string) => html + editorUIHtml);
 }
