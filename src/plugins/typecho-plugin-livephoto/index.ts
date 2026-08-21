@@ -152,7 +152,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     item.setAttribute('aria-label', '插入 LivePhoto');
     item.style.cursor = 'pointer';
     item.style.padding = '0 4px';
-    item.style.display = 'flex';
+    item.style.display = 'inline';
     item.style.alignItems = 'center';
     item.style.justifyContent = 'center';
     item.innerHTML = svgIcon;
