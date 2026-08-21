@@ -541,6 +541,9 @@ const writePostBottomHtml = await applyFilterSafely(ctx, 'admin:writePost:bottom
 
       // ========== 文件上传 ==========
       (function () {
+
+        const csrfToken = document.querySelector('input[name="_"]')?.value || '';
+
         var uploadPanel = $('#upload-panel'),
             cid = uploadPanel.data('cid') || 0,
             fileInput = $('#file-input'),
@@ -594,6 +597,7 @@ const writePostBottomHtml = await applyFilterSafely(ctx, 'admin:writePost:bottom
               var fd = new FormData();
               fd.append('file', file);
               fd.append('cid', String(cid));
+              fd.append('_', csrfToken);
 
               $.ajax({
                 url: '/api/admin/upload',
