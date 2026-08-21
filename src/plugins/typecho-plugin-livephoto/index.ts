@@ -31,7 +31,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
 
   // ========== 后台编辑器注入 ==========
   const editorUIHtml = `
-<div id="livephoto-dialog" class="wmd-prompt-dialog" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10000; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.2); padding:20px; min-width:400px;">
+<div id="livephoto-dialog" class="wmd-prompt-dialog" style="display:none; position:fixed; top:50%; left:50%; z-index:10000; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.2); padding:20px;">
   <div>
     <p><b>插入 Live Photo</b></p>
     <p>请输入图片URL:</p>
@@ -151,7 +151,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     item.title = '插入 LivePhoto';
     item.setAttribute('aria-label', '插入 LivePhoto');
     item.style.cursor = 'pointer';
-    item.style.padding = '0 4px';
+    item.style.padding = '4px 4px 0px 4px;';
     item.style.display = 'inline';
     item.style.alignItems = 'center';
     item.style.justifyContent = 'center';
