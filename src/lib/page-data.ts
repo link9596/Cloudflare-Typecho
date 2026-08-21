@@ -15,6 +15,7 @@ import {
   buildCategoryLink, buildTagLink, buildSearchLink,
 } from '@/lib/content';
 import { renderCommentText, renderContentExcerpt, renderMarkdownFiltered } from '@/lib/markdown';
+import { getRenderedContent, hashSourceWithPlugins } from '@/lib/rendered-content';
 import { paginate } from '@/lib/pagination';
 import { generateCommentToken } from '@/lib/auth';
 import { buildGravatarUrl } from '@/lib/gravatar';
@@ -25,9 +26,7 @@ import type {
   ThemeIndexProps, ThemePostProps, ThemePageProps, ThemeArchiveProps, ThemeNotFoundProps,
   PostListItem, CommentNode, CommentOptions,
 } from '@/lib/theme-props';
-
 // ─── Local row types (derived from Drizzle schema) ───────────────────────
-
 type ContentRow = typeof schema.contents.$inferSelect;
 type CommentRow = typeof schema.comments.$inferSelect;
 type MetaRow = typeof schema.metas.$inferSelect;
@@ -36,16 +35,15 @@ type CategoryEntry = { name: string; slug: string; permalink: string };
 type CategoryMap = Map<number, CategoryEntry[]>;
 type AuthorEntry = { uid: number; name: string | null; screenName: string | null };
 type AuthorMap = Map<number, AuthorEntry>;
-
+type RenderedEntry = { renderedExcerpt: string; sourceHash: string };
+type RenderedMap = Map<number, RenderedEntry>;
 const EMPTY_SIDEBAR: SidebarData = {
   recentPosts: [],
   recentComments: [],
   categories: [],
   archives: [],
 };
-
 // ─── Helpers ────────────────────────────────────────────────────────────
-
 async function loadCommon(ctx: RequestContext, requestUrl: string, withSidebar = true) {
   const { db, options, urls, user, isLoggedIn } = ctx;
   const [sidebarData, pages] = await Promise.all([
@@ -64,16 +62,13 @@ async function loadCommon(ctx: RequestContext, requestUrl: string, withSidebar =
   const currentPath = new URL(requestUrl).pathname;
   return { options, urls, user, isLoggedIn, pages, sidebarData, currentPath, pluginCtx: ctx };
 }
-
 function getPage(locals: Record<string, unknown>, url: URL): number {
   const raw = (locals as { _page?: number })._page ?? url.searchParams.get('page');
   return raw ? (typeof raw === 'number' ? raw : parseInt(raw, 10) || 1) : 1;
 }
-
 function buildCommentTree(allComments: CommentRow[], options: SiteOptions): CommentNode[] {
   const map = new Map<number, CommentNode>();
   const roots: CommentNode[] = [];
-
   for (const c of allComments) {
     map.set(c.coid, {
       coid: c.coid,
@@ -88,11 +83,9 @@ function buildCommentTree(allComments: CommentRow[], options: SiteOptions): Comm
       children: [],
     });
   }
-
   if (!options.commentsThreaded) {
     return allComments.map(comment => map.get(comment.coid)!);
   }
-
   for (const c of allComments) {
     const node = map.get(c.coid)!;
     if (c.parent && map.has(c.parent)) {
@@ -101,10 +94,8 @@ function buildCommentTree(allComments: CommentRow[], options: SiteOptions): Comm
       roots.push(node);
     }
   }
-
   return roots;
 }
-
 async function buildGravatarMap(allComments: CommentRow[], avatarRating: string): Promise<Record<number, string>> {
   const urlsByEmail = new Map<string, Promise<string>>();
   const entries = await Promise.all(
@@ -124,7 +115,6 @@ async function buildGravatarMap(allComments: CommentRow[], avatarRating: string)
   );
   return Object.fromEntries(entries);
 }
-
 function buildCommentOptions(options: SiteOptions, securityToken: string): CommentOptions {
   return {
     allowComment: true,
@@ -147,7 +137,6 @@ function buildCommentOptions(options: SiteOptions, securityToken: string): Comme
     htmlTagAllowed: options.commentsHTMLTagAllowed || '',
   };
 }
-
 async function fetchAuthors(db: Database, authorIds: number[]): Promise<AuthorMap> {
   if (authorIds.length === 0) return new Map();
   const authors = await db
@@ -160,7 +149,6 @@ async function fetchAuthors(db: Database, authorIds: number[]): Promise<AuthorMa
     .where(sql`${schema.users.uid} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`);
   return new Map(authors.map(a => [a.uid, a]));
 }
-
 function mapPostCategories(
   rows: Array<{ cid: number; mid: number; name: string | null; slug: string | null }>,
   siteUrl: string,
@@ -177,13 +165,36 @@ function mapPostCategories(
   }
   return map;
 }
-
+/**
+ * 批量查询文章的预渲染摘要。
+ * 命中缓存的文章可以直接用，避免每篇都执行 Markdown 渲染。
+ */
+async function loadRenderedMap(db: Database, postIds: number[]): Promise<RenderedMap> {
+  const map: RenderedMap = new Map();
+  if (postIds.length === 0) return map;
+  const rows = await db
+    .select({
+      cid: schema.contentsRendered.cid,
+      renderedExcerpt: schema.contentsRendered.renderedExcerpt,
+      sourceHash: schema.contentsRendered.sourceHash,
+    })
+    .from(schema.contentsRendered)
+    .where(sql`${schema.contentsRendered.cid} IN (${sql.join(postIds.map(id => sql`${id}`), sql`, `)})`);
+  for (const row of rows) {
+    map.set(row.cid, {
+      renderedExcerpt: row.renderedExcerpt || '',
+      sourceHash: row.sourceHash || '',
+    });
+  }
+  return map;
+}
 function toPostListItem(
   post: ContentRow,
   authorMap: AuthorMap,
   categoryMap: CategoryMap,
   siteUrl: string,
-  permalinkPattern?: string | null,
+  permalinkPattern: string | null | undefined,
+  renderedMap: RenderedMap,
 ): PostListItem {
   const author = authorMap.get(post.authorId || 0);
   const categories = categoryMap.get(post.cid) || [];
@@ -192,22 +203,26 @@ function toPostListItem(
     siteUrl,
     permalinkPattern,
   );
+  // 优先用预渲染摘要，未命中则实时渲染
+  const sourceHash = hashSourceWithPlugins(post.text || '');
+  const cached = renderedMap.get(post.cid);
+  const excerpt = cached?.sourceHash === sourceHash && cached.renderedExcerpt
+    ? `${cached.renderedExcerpt}<p class="more"><a href="${permalink}">- 阅读剩余部分 -</a></p>`
+    : renderContentExcerpt(post.text || '', '- 阅读剩余部分 -', permalink);
   return {
     cid: post.cid,
     title: post.title || '无标题',
     permalink,
-    excerpt: renderContentExcerpt(post.text || '', '- 阅读剩余部分 -', permalink),
+    excerpt,
     created: post.created || 0,
     commentsNum: post.commentsNum || 0,
     author: author ? { uid: author.uid, name: author.name || '', screenName: author.screenName || author.name || '' } : null,
     categories,
   };
 }
-
 // ─── Shared archive query ───────────────────────────────────────────────
 // All five list pages (index, category, tag, author, search) share this
 // pattern: count → paginated query → batch fetch authors+categories → map.
-
 interface ArchiveParams {
   archiveTitle: string;
   archiveType: 'index' | 'category' | 'tag' | 'author' | 'search';
@@ -222,16 +237,13 @@ interface ArchiveParams {
   /** Stable key fragment for versioned archive count caching. */
   countKey?: string;
 }
-
 const ARCHIVE_COUNT_CACHE_TTL_MS = 60_000;
 const ARCHIVE_COUNT_CACHE_MAX = 200;
 const archiveCountCache = new Map<string, { count: number; expiresAt: number }>();
-
 /** Test-only: clear archive count cache. */
 export function resetArchiveCountCache(): void {
   archiveCountCache.clear();
 }
-
 function readCachedArchiveCount(key: string): number | undefined {
   const entry = archiveCountCache.get(key);
   if (!entry) return undefined;
@@ -241,7 +253,6 @@ function readCachedArchiveCount(key: string): number | undefined {
   }
   return entry.count;
 }
-
 function writeCachedArchiveCount(key: string, count: number): void {
   archiveCountCache.set(key, { count, expiresAt: Date.now() + ARCHIVE_COUNT_CACHE_TTL_MS });
   if (archiveCountCache.size > ARCHIVE_COUNT_CACHE_MAX) {
@@ -251,7 +262,6 @@ function writeCachedArchiveCount(key: string, count: number): void {
     }
   }
 }
-
 async function prepareArchiveData(
   ctx: RequestContext,
   requestUrl: string,
@@ -263,7 +273,6 @@ async function prepareArchiveData(
   const commonPromise = loadCommon(ctx, requestUrl);
   const page = getPage(locals, url);
   const pageSize = options.pageSize || 5;
-
   // G7-5: every archive (index, category, tag, author, search) hides
   // posts whose `created` is in the future. The legacy code only
   // filtered the index page, leaking scheduled posts via category/tag
@@ -275,14 +284,11 @@ async function prepareArchiveData(
   if (params.ftsMatch) {
     baseConditions.push(sql`${contentsFtsTableRef} MATCH ${params.ftsMatch}`);
   }
-
   const hasJoin = params.joinMid !== undefined;
   const hasFts = !!params.ftsMatch;
-
   const countWhere = hasJoin
     ? and(eq(schema.relationships.mid, params.joinMid!), ...baseConditions)
     : and(...baseConditions);
-
   const applyJoins = (q: any): any => {
     let joined = q;
     if (hasJoin) {
@@ -296,7 +302,6 @@ async function prepareArchiveData(
     }
     return joined;
   };
-
   // Keyset pagination: ORDER BY created DESC, cid DESC with a (created, cid)
   // cursor from the previous page. Page 1 needs no offset at all; deeper
   // pages pay only an index-only boundary lookup instead of re-scanning the
@@ -321,14 +326,12 @@ async function prepareArchiveData(
       .orderBy(desc(schema.contents.created), desc(schema.contents.cid))
       .limit(pageSize);
   };
-
   const makeBoundaryStatement = (offset: number) =>
     applyJoins(db.select({ created: schema.contents.created, cid: schema.contents.cid }).from(schema.contents))
       .where(countWhere)
       .orderBy(desc(schema.contents.created), desc(schema.contents.cid))
       .limit(1)
       .offset(offset);
-
   const requestedPage = Math.max(1, page);
   // Exact count so pagination shows accurate page numbers. The
   // (type, status, created) index keeps plain archive counts index-only.
@@ -341,7 +344,6 @@ async function prepareArchiveData(
         db.select({ count: sql<number>`count(*)` }).from(schema.contents),
       ).where(countWhere)
     : null;
-
   // Batch the count with either the page-1 list (no cursor needed) or the
   // index-only boundary lookup for the requested page.
   const listOrBoundary = requestedPage === 1
@@ -366,7 +368,6 @@ async function prepareArchiveData(
   }
   const pg = paginate(totalPosts, page, pageSize, params.baseUrl);
   const currentPage = pg.currentPage;
-
   let posts: ContentRow[] | Array<{ content: ContentRow }>;
   if (requestedPage === 1) {
     posts = initialPosts as ContentRow[] | Array<{ content: ContentRow }>;
@@ -386,15 +387,15 @@ async function prepareArchiveData(
       ? await makeListStatement({ created: boundary.created ?? 0, cid: boundary.cid ?? 0 })
       : [];
   }
-
   const rawPosts: ContentRow[] = (hasJoin || hasFts)
     ? (posts as { content: ContentRow }[]).map(p => p.content)
     : (posts as ContentRow[]);
   const authorIds = [...new Set(rawPosts.map(p => p.authorId).filter((id): id is number => Boolean(id)))];
   const postIds = rawPosts.map(p => p.cid).filter((id): id is number => id !== null);
-
   let authorMap = params.authorOverride;
   let categoryRows: Array<{ cid: number; mid: number; name: string | null; slug: string | null }> = [];
+  // 批量查询预渲染摘要（和分类、作者查询并行）
+  const renderedMapPromise = loadRenderedMap(db, postIds);
   if (postIds.length > 0) {
     const categoryStatement = db
       .select({
@@ -411,7 +412,6 @@ async function prepareArchiveData(
           eq(schema.metas.type, 'category')
         )
       );
-
     if (authorMap || authorIds.length === 0) {
       categoryRows = await categoryStatement;
     } else {
@@ -436,20 +436,18 @@ async function prepareArchiveData(
     urls.siteUrl,
     options.categoryPattern as string | undefined,
   );
-
+  const renderedMap = await renderedMapPromise;
   return {
     ...common,
     archiveTitle: params.archiveTitle,
     archiveType: params.archiveType,
     posts: rawPosts.map(p =>
-      toPostListItem(p, authorMap, categoryMap, urls.siteUrl, options.permalinkPattern as string | undefined)
+      toPostListItem(p, authorMap, categoryMap, urls.siteUrl, options.permalinkPattern as string | undefined, renderedMap)
     ),
     pagination: pg,
   };
 }
-
 // ─── Index (home page) ──────────────────────────────────────────────────
-
 export async function prepareIndexData(
   ctx: RequestContext,
   requestUrl: string,
@@ -464,15 +462,12 @@ export async function prepareIndexData(
     // need to duplicate it here.
   });
 }
-
 // ─── Post detail ────────────────────────────────────────────────────────
-
 export interface PreparePostResult {
   props: ThemePostProps;
   /** If set, the page route should return this Response instead */
   redirect?: never;
 }
-
 export async function preparePostData(
   ctx: RequestContext,
   cidNum: number,
@@ -481,21 +476,16 @@ export async function preparePostData(
   preloadedRow?: ContentRow | null,
 ): Promise<ThemePostProps | Response> {
   const { db, options, urls, user, isLoggedIn } = ctx;
-
   const contentRow = preloadedRow ?? await db.query.contents.findFirst({
     where: eq(schema.contents.cid, cidNum),
   });
-
   if (!contentRow) return new Response('Not Found', { status: 404 });
-
   if (!canViewContent(contentRow, { isLoggedIn, uid: user?.uid })) {
     return new Response('Not Found', { status: 404 });
   }
-
   // Password
   const hasPassword = !!contentRow.password;
   const passwordVerified = hasPassword && suppliedPassword === contentRow.password;
-
   // Keep all content-specific reads in one D1 round trip while the common
   // chrome data loads independently.
   const [
@@ -541,7 +531,6 @@ export async function preparePostData(
   ]);
   const author = authorRows[0] ?? null;
   const allComments = commentPage.rows;
-
   type MetaEntry = { name: string | null; slug: string | null; type: string | null };
   const categories = (relatedMetas as MetaEntry[]).filter(m => m.type === 'category').map(m => ({
     name: m.name || '',
@@ -553,29 +542,25 @@ export async function preparePostData(
     slug: m.slug || '',
     permalink: buildTagLink(m.slug || '', urls.siteUrl),
   }));
-
   const commentTree = buildCommentTree(allComments, options);
   const gravatarMap = options.commentsAvatar
     ? await buildGravatarMap(allComments, options.commentsAvatarRating || 'G')
     : {};
-
   const permalink = buildPermalink(
     { cid: contentRow.cid, slug: contentRow.slug, type: contentRow.type, created: contentRow.created, category: categories[0]?.slug },
     urls.siteUrl,
     options.permalinkPattern as string | undefined,
   );
-
   const allowComment = contentRow.allowComment === '1';
-  const renderedContent = hasPassword && !passwordVerified
+  // 使用预渲染缓存：命中则直接返回，未命中则实时渲染并异步回填
+    const renderedContent = hasPassword && !passwordVerified
     ? '<p>此内容已加密，请输入密码访问。</p>'
-    : await renderMarkdownFiltered(ctx, contentRow.text || '');
-
+    : (await getRenderedContent(db, contentRow.cid, contentRow.text || '', { ctx })).html;
   // Generate CSRF token for comment form, bound to cid so that pages
   // visited via email/RSS without a referer still validate.
   const securityToken = options.commentsAntiSpam
     ? await generateCommentToken(options.secret as string, contentRow.cid)
     : '';
-
   return {
     ...common,
     post: {
@@ -607,9 +592,7 @@ export async function preparePostData(
     gravatarMap,
   };
 }
-
 // ─── Independent page ───────────────────────────────────────────────────
-
 export async function preparePageData(
   ctx: RequestContext,
   cleanSlug: string,
@@ -618,49 +601,40 @@ export async function preparePageData(
   preloadedRow?: ContentRow | null,
 ): Promise<ThemePageProps | Response> {
   const { db, options, urls, user, isLoggedIn } = ctx;
-
   const pageRow = preloadedRow ?? await db.query.contents.findFirst({
     where: and(eq(schema.contents.slug, cleanSlug), eq(schema.contents.type, 'page')),
   });
-
   if (!pageRow) return new Response('Not Found', { status: 404 });
-
   if (!canViewContent(pageRow, { isLoggedIn, uid: user?.uid })) {
     return new Response('Not Found', { status: 404 });
   }
-
   const permalink = buildPermalink(
     { cid: pageRow.cid, slug: pageRow.slug, type: pageRow.type, created: pageRow.created },
     urls.siteUrl,
     undefined,
     options.pagePattern as string | undefined,
   );
-
   const hasPassword = !!pageRow.password;
   const passwordVerified = hasPassword && suppliedPassword === pageRow.password;
-
   const [commentPage, common] = await Promise.all([
     loadCommentPage(db, pageRow.cid, options, requestUrl, pageRow.commentsNum ?? null, options.cacheVersion),
     loadCommon(ctx, requestUrl),
   ]);
   const allComments = commentPage.rows;
-
   const commentTree = buildCommentTree(allComments, options);
   const gravatarMap = options.commentsAvatar
     ? await buildGravatarMap(allComments, options.commentsAvatarRating || 'G')
     : {};
   const allowComment = pageRow.allowComment === '1';
-
-  const renderedContent = hasPassword && !passwordVerified
+  // 使用预渲染缓存
+    const renderedContent = hasPassword && !passwordVerified
     ? '<p>此内容已加密，请输入密码访问。</p>'
-    : await renderMarkdownFiltered(ctx, pageRow.text || '');
-
+    : (await getRenderedContent(db, pageRow.cid, pageRow.text || '', { ctx })).html;
   // Generate CSRF token for comment form, bound to cid so that pages
   // visited via email/RSS without a referer still validate.
   const securityToken = options.commentsAntiSpam
     ? await generateCommentToken(options.secret as string, pageRow.cid)
     : '';
-
   return {
     ...common,
     page: {
@@ -680,9 +654,7 @@ export async function preparePageData(
     gravatarMap,
   };
 }
-
 // ─── Archive (category / tag / author / search) ─────────────────────────
-
 export async function prepareCategoryData(
   ctx: RequestContext,
   slug: string,
@@ -697,7 +669,6 @@ export async function prepareCategoryData(
       })
     : preloadedCategory;
   if (!category) return new Response('Not Found', { status: 404 });
-
   return prepareArchiveData(ctx, requestUrl, locals, url, {
     archiveTitle: `分类 ${category.name} 下的文章`,
     archiveType: 'category',
@@ -705,7 +676,6 @@ export async function prepareCategoryData(
     joinMid: category.mid,
   });
 }
-
 export async function prepareTagData(
   ctx: RequestContext,
   slug: string,
@@ -720,7 +690,6 @@ export async function prepareTagData(
       })
     : preloadedTag;
   if (!tag) return new Response('Not Found', { status: 404 });
-
   return prepareArchiveData(ctx, requestUrl, locals, url, {
     archiveTitle: `标签 ${tag.name} 下的文章`,
     archiveType: 'tag',
@@ -728,7 +697,6 @@ export async function prepareTagData(
     joinMid: tag.mid,
   });
 }
-
 export async function prepareAuthorData(
   ctx: RequestContext,
   uidNum: number,
@@ -741,9 +709,7 @@ export async function prepareAuthorData(
     ? await ctx.db.query.users.findFirst({ where: eq(schema.users.uid, uidNum) })
     : preloadedAuthor;
   if (!author) return new Response('Not Found', { status: 404 });
-
   const authorMap: AuthorMap = new Map([[author.uid, author]]);
-
   return prepareArchiveData(ctx, requestUrl, locals, url, {
     archiveTitle: `${author.screenName || author.name} 发布的文章`,
     archiveType: 'author',
@@ -752,7 +718,6 @@ export async function prepareAuthorData(
     authorOverride: authorMap,
   });
 }
-
 export async function prepareSearchData(
   ctx: RequestContext,
   keywords: string,
@@ -774,7 +739,6 @@ export async function prepareSearchData(
     && terms.length > 0
     && terms.every((term) => term.length >= FTS_MIN_CHARS)
     && isFtsAvailable();
-
   return prepareArchiveData(ctx, requestUrl, locals, url, {
     archiveTitle: `包含关键字 ${trimmed} 的文章`,
     archiveType: 'search',
@@ -789,9 +753,7 @@ export async function prepareSearchData(
     ftsMatch: useFts ? buildFtsMatchExpression(trimmed) : null,
   });
 }
-
 // ─── 404 Not Found ──────────────────────────────────────────────────────
-
 export async function prepareNotFoundData(
   ctx: RequestContext,
   requestUrl: string,
