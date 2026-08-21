@@ -162,3 +162,15 @@ export const passwordResetRequests = sqliteTable('typecho_password_reset_request
 }, (table) => [
   uniqueIndex('typecho_password_reset_requests_tokenHash').on(table.tokenHash),
 ]);
+
+// ==================== Contents Rendered (预渲染缓存) ====================
+// 存储文章渲染后的 HTML，避免每次访问都重新执行 Markdown 渲染
+// 与 typecho_contents 一对一关系，cid 为主键。
+// 这是一个纯缓存表，删除后不影响原始数据，下次访问会自动重新渲染。
+export const contentsRendered = sqliteTable('typecho_contents_rendered', {
+  cid: integer('cid').primaryKey(),
+  renderedHtml: text('renderedHtml'),
+  renderedExcerpt: text('renderedExcerpt'),
+  sourceHash: text('sourceHash'),
+  renderedAt: integer('renderedAt'),
+});
