@@ -112,7 +112,12 @@ export async function getRenderedContent(
     if (waitUntil) {
       waitUntil(writeBack);
     } else {
-      writeBack.catch(() => {});
+      // 没有 waitUntil 时同步等待，确保一定写入
+      try {
+        await writeBack;
+      } catch (e) {
+        console.warn('[rendered-content] 写入失败:', e);
+      }
     }
 
     return { html, plainExcerpt };
