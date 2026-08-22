@@ -206,8 +206,11 @@ function toPostListItem(
   // 优先用预渲染摘要，未命中则实时渲染
   const sourceHash = hashSourceWithPlugins(post.text || '');
   const cached = renderedMap.get(post.cid);
+  const hasMoreMarker = (post.text || '').includes('<!--more-->');
   const excerpt = cached?.sourceHash === sourceHash && cached.renderedExcerpt
-    ? `${cached.renderedExcerpt}<p class="more"><a href="${permalink}">- 阅读剩余部分 -</a></p>`
+    ? (hasMoreMarker
+        ? `${cached.renderedExcerpt}<p class="more"><a href="${permalink}">- 阅读剩余部分 -</a></p>`
+        : cached.renderedExcerpt)
     : renderContentExcerpt(post.text || '', '- 阅读剩余部分 -', permalink);
   return {
     cid: post.cid,
