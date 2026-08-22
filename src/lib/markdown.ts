@@ -256,6 +256,25 @@ export function renderContentExcerpt(
     return renderMarkdown(text);
   }
 
+/**
+ * 只渲染摘要部分（HTML 格式），不含"阅读更多"链接。
+ * 用于预渲染缓存，列表页使用。
+ * - 有 <!--more--> 标记：返回 more 之前的 HTML
+ * - 没有 <!--more-->：返回全文 HTML
+ */
+export function renderExcerptHtml(text: string): string {
+  if (!text) return '';
+  const content = stripMarkdownPrefix(text);
+  if (!content.includes('<!--more-->')) {
+    return renderContent(text).html;
+  }
+  const withPlaceholder = content.replace(MORE_COMMENT_RE, '\n\n' + MORE_PLACEHOLDER + '\n\n');
+  const html = marked.parse(withPlaceholder, { async: false }) as string;
+  const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
+  return sanitized.split(MORE_PLACEHOLDER_RE)[0];
+}
+
+
   // Surround the marker with blank lines before substituting the placeholder.
   // This guarantees that marked wraps the placeholder in its own <p> block
   // regardless of whether the author placed <!--more--> inline or between

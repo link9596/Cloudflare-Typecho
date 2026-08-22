@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { schema, type Database } from '@/db';
-import { renderContent, renderContentExcerpt, renderMarkdownFiltered, type RenderedContent } from '@/lib/markdown';
+import { renderContent, renderContentExcerpt, renderMarkdownFiltered, renderExcerptHtml, type RenderedContent } from '@/lib/markdown';
 import type { RequestContext } from '@/lib/context';
 
 /**
@@ -69,7 +69,7 @@ export async function getRenderedContent(
   if (cached && cached.sourceHash === cacheHash && cached.renderedHtml) {
     return {
       html: cached.renderedHtml,
-      plainExcerpt: cached.renderedExcerpt || '',
+      plainExcerpt: (cached.renderedExcerpt || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
     };
   }
 
@@ -85,15 +85,19 @@ export async function getRenderedContent(
       ? await renderMarkdownFiltered(ctx, sourceText || '')
       : renderContent(sourceText || '', maxExcerptLength).html;
 
-    // 摘要：始终用纯文本渲染（插件 filter 一般不影响纯文本摘要）
-    const { plainExcerpt } = renderContent(sourceText || '', maxExcerptLength);
+    // HTML 格式摘要（列表页用）
+    const excerptHtml = renderExcerptHtml(sourceText || '');
+
+    // 纯文本摘要（从 HTML 提取，兼容旧接口）
+    const plainExcerpt = excerptHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
 
     // 5. 异步回填预渲染表
     const writeBack = db.insert(schema.contentsRendered)
       .values({
         cid,
         renderedHtml: html,
-        renderedExcerpt: plainExcerpt,
+        renderedExcerpt: excerptHtml,
         sourceHash: cacheHash,
         renderedAt: Math.floor(Date.now() / 1000),
       })
