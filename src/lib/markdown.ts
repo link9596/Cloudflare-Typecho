@@ -256,6 +256,19 @@ export function renderContentExcerpt(
     return renderMarkdown(text);
   }
 
+  // Surround the marker with blank lines before substituting the placeholder.
+  // This guarantees that marked wraps the placeholder in its own <p> block
+  // regardless of whether the author placed <!--more--> inline or between
+  // paragraphs — enabling a clean split on the rendered output.
+  const withPlaceholder = content.replace(MORE_COMMENT_RE, '\n\n' + MORE_PLACEHOLDER + '\n\n');
+  const html = marked.parse(withPlaceholder, { async: false }) as string;
+  const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
+
+  // Split on the rendered placeholder and keep only the excerpt (part before it).
+  const excerptHtml = sanitized.split(MORE_PLACEHOLDER_RE)[0];
+  return `${excerptHtml}<p class="more"><a href="${escapeHtml(permalink)}" title="${escapeHtml(moreText)}">${escapeHtml(moreText)}</a></p>`;
+}
+
 /**
  * 只渲染摘要部分（HTML 格式），不含"阅读更多"链接。
  * 用于预渲染缓存，列表页使用。
@@ -272,20 +285,6 @@ export function renderExcerptHtml(text: string): string {
   const html = marked.parse(withPlaceholder, { async: false }) as string;
   const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
   return sanitized.split(MORE_PLACEHOLDER_RE)[0];
-}
-
-
-  // Surround the marker with blank lines before substituting the placeholder.
-  // This guarantees that marked wraps the placeholder in its own <p> block
-  // regardless of whether the author placed <!--more--> inline or between
-  // paragraphs — enabling a clean split on the rendered output.
-  const withPlaceholder = content.replace(MORE_COMMENT_RE, '\n\n' + MORE_PLACEHOLDER + '\n\n');
-  const html = marked.parse(withPlaceholder, { async: false }) as string;
-  const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
-
-  // Split on the rendered placeholder and keep only the excerpt (part before it).
-  const excerptHtml = sanitized.split(MORE_PLACEHOLDER_RE)[0];
-  return `${excerptHtml}<p class="more"><a href="${escapeHtml(permalink)}" title="${escapeHtml(moreText)}">${escapeHtml(moreText)}</a></p>`;
 }
 
 /**
