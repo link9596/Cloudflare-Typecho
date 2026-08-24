@@ -27,7 +27,7 @@ export function defaultCspDirectives(): CspDirectives {
     'script-src': ["'self'", "'unsafe-inline'" , 'https://static.cloudflareinsights.com'],
     'font-src': ["'self'", 'data:'],
     'connect-src': ["'self'"],
-    'media-src': ["'self'", 'https://files.atlinker.cn'],
+    'media-src': ["'self'", 'https://files.atlinker.cn', 'https://*.lkin.cn'],
     'frame-src': [
       'https://www.youtube.com',
       'https://player.bilibili.com',
