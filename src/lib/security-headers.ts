@@ -22,12 +22,12 @@ export type CspDirectives = Record<string, string[]>;
 export function defaultCspDirectives(): CspDirectives {
   return {
     'default-src': ["'self'"],
-    'img-src': ["'self'", 'data:', 'https://www.gravatar.com', 'https:' , 'https://files.atlinker.cn'],
+    'img-src': ["'self'", 'data:', 'https://www.gravatar.com', 'https:' , 'https://*.atlinker.cn', 'https://*.lkin.cn'],
     'style-src': ["'self'", "'unsafe-inline'"],
     'script-src': ["'self'", "'unsafe-inline'" , 'https://static.cloudflareinsights.com'],
     'font-src': ["'self'", 'data:'],
     'connect-src': ["'self'"],
-    'media-src': ["'self'", 'https://files.atlinker.cn', 'https://*.lkin.cn'],
+    'media-src': ["'self'", 'https://*.atlinker.cn', 'https://*.lkin.cn'],
     'frame-src': [
       'https://www.youtube.com',
       'https://player.bilibili.com',
