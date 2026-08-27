@@ -168,6 +168,24 @@ describe('POST /api/comment', () => {
     expect(res.headers.get('location')).toContain('#comments');
   });
 
+  it('does not bump cacheVersion on comment write (targeted purge only)', async () => {
+    await seedOptions(testDb);
+    await testDb.insert(schema.options).values({ name: 'cacheVersion', user: 0, value: '7' });
+    const content = await seedContent(testDb);
+    const req = makeCommentRequest({
+      cid: String(content.cid),
+      text: 'Great post!',
+      author: 'Alice',
+      mail: 'alice@example.com',
+    });
+    const res = await POST({ request: req, locals: {} } as any);
+    expect(res.status).toBe(302);
+    const row = await testDb.query.options.findFirst({
+      where: (o, { eq }) => eq(o.name, 'cacheVersion'),
+    });
+    expect(row?.value).toBe('7');
+  });
+
   it('stores comment with correct IP from CF-Connecting-IP', async () => {
     await seedOptions(testDb);
     const content = await seedContent(testDb);

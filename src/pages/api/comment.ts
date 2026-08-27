@@ -3,7 +3,9 @@ import { getDb, schema } from '@/db';
 import { loadOptions } from '@/lib/options';
 import { getAuthCookies, validateAuthToken, validateCommentToken, timeSafeEqual } from '@/lib/auth';
 import { setActivatedPlugins, parseActivatedPlugins, applyFilter, doHook, type HookContext } from '@/lib/plugin';
-import { bumpCacheVersion, purgeContentCache } from '@/lib/cache';
+import { purgeContentCache } from '@/lib/cache';
+import { invalidateSidebarSnapshot } from '@/lib/sidebar';
+import { invalidateCommentRootCounts } from '@/lib/comment-page';
 import { getClientIp, getRequestCoreContextFromLocals } from '@/lib/context';
 import { notifyOnComment } from '@/lib/comment-email';
 import { buildPermalink } from '@/lib/content';
@@ -322,10 +324,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     options.permalinkPattern as string | undefined,
     options.pagePattern as string | undefined,
   );
-  await Promise.all([
-    bumpCacheVersion(db),
-    purgeContentCache(options.siteUrl || '', cid, { contentUrl }),
-  ]);
+  // Comments no longer bump cacheVersion (that would invalidate every page
+  // across all PoPs on each comment). Purge just the affected URLs from the
+  // local PoP cache and drop the in-isolate sidebar/root-count snapshots so
+  // the re-render is fresh; other PoPs converge within the page s-maxage TTL.
+  await purgeContentCache(options.siteUrl || '', options.cacheVersion, cid, { contentUrl });
+  invalidateSidebarSnapshot();
+  invalidateCommentRootCounts();
 
   // Redirect back to the post
   // Prevent open redirect: only use referer if it's a relative path or same-origin

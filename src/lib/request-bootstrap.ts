@@ -6,6 +6,7 @@ import { ensureSecret, loadOptions } from '@/lib/options';
 import { parsePageNumber } from '@/lib/input';
 import { parseActivatedPlugins, setActivatedPlugins, type HookContext } from '@/lib/plugin';
 import { applySecurityHeaders } from '@/lib/security-headers';
+import { PUBLIC_PAGE_S_MAXAGE_SECONDS } from '@/lib/constants';
 
 export interface RequestTarget {
   originalUrl: URL;
@@ -126,7 +127,7 @@ export async function finalizeRequestResponse(
   if (!finalization.cacheKey || finalized.status !== 200) return finalized;
 
   const cacheHeaders = new Headers(finalized.headers);
-  if (!cacheHeaders.has('Cache-Control')) cacheHeaders.set('Cache-Control', 'public, s-maxage=300');
+  if (!cacheHeaders.has('Cache-Control')) cacheHeaders.set('Cache-Control', `public, s-maxage=${PUBLIC_PAGE_S_MAXAGE_SECONDS}`);
   cacheHeaders.set('Vary', mergeVary(cacheHeaders.get('Vary'), ['Cookie', 'Accept-Encoding']));
   cacheHeaders.delete('Set-Cookie');
   const cacheable = new Response(finalized.clone().body, {

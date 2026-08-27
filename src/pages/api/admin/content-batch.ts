@@ -3,7 +3,7 @@ import { schema } from '@/db';
 import { hasPermission } from '@/lib/auth';
 import { isAdminActionResponse, requireAdminAction, safeAdminRedirectUrl } from '@/lib/admin-auth';
 import { doHook } from '@/lib/plugin';
-import { bumpCacheVersion, purgeContentCache } from '@/lib/cache';
+import { bumpCacheVersion } from '@/lib/cache';
 import { readAdminFormOrError } from '@/lib/input';
 import { eq, sql } from 'drizzle-orm';
 
@@ -89,6 +89,7 @@ async function handler({ request, locals, url }: { request: Request; locals: App
       auth.db.delete(schema.comments).where(sql`${schema.comments.cid} IN (${cidList})`),
       auth.db.delete(schema.fields).where(sql`${schema.fields.cid} IN (${cidList})`),
       auth.db.delete(schema.contents).where(sql`${schema.contents.cid} IN (${cidList})`),
+      auth.db.delete(schema.contentsRendered).where(sql`${schema.contentsRendered.cid} IN (${cidList})`),
     ];
     const all = [...decrementStmts, ...deleteStmts];
     if (all.length > 0) {
@@ -125,7 +126,8 @@ async function handler({ request, locals, url }: { request: Request; locals: App
   }
 
   await bumpCacheVersion(auth.db);
-  await purgeContentCache(auth.options.siteUrl || '');
+  // Content batch writes change content itself, so the full-site
+  // cacheVersion bump (not a URL purge) is the correct invalidation.
 
   const referer = safeAdminRedirectUrl(
     request.headers.get('referer'),

@@ -15,6 +15,16 @@ export const UPLOAD_RATE_LIMIT = { windowSeconds: 60, maxRequests: 60 } as const
 /** Options cache TTL (seconds). */
 export const OPTIONS_CACHE_TTL_SECONDS = 600;
 
+/**
+ * Edge-cache freshness for public HTML pages (Cache-Control s-maxage).
+ * Content/option writes bump cacheVersion, which changes the cache key and
+ * invalidates every PoP immediately; comment writes purge only the affected
+ * URLs on the local PoP (see purgeContentCache) and rely on this TTL for
+ * cross-PoP convergence. Long enough that idle pages are not re-rendered
+ * every few minutes.
+ */
+export const PUBLIC_PAGE_S_MAXAGE_SECONDS = 3600;
+
 /** Plugin config apply hook timeout (ms). */
 export const PLUGIN_CONFIG_TIMEOUT_MS = 5_000;
 

@@ -8,6 +8,7 @@ import {
   finalizeRequestResponse,
   resolveRequestTarget,
 } from '@/lib/request-bootstrap';
+import { withCacheVersion } from '@/lib/cache';
 import { eq, and } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { publishedPostCondition } from '@/lib/content-visibility';
@@ -279,8 +280,3 @@ function isReservedCorePath(path: string): boolean {
   return false;
 }
 
-function withCacheVersion(requestUrl: string, cacheVersion?: number): string {
-  const url = new URL(requestUrl);
-  url.searchParams.set('__typecho_cache', String(cacheVersion || 0));
-  return url.toString();
-}

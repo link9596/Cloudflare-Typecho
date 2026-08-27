@@ -4,6 +4,7 @@ import {
   mergeVary,
   resolveRequestTarget,
 } from '@/lib/request-bootstrap';
+import { PUBLIC_PAGE_S_MAXAGE_SECONDS } from '@/lib/constants';
 
 describe('resolveRequestTarget()', () => {
   it('resolves pagination while preserving the original URL and query', () => {
@@ -45,6 +46,20 @@ describe('finalizeRequestResponse()', () => {
     const cached = put.mock.calls[0][1];
     expect(cached.headers.get('set-cookie')).toBeNull();
     expect(cached.headers.get('vary')).toContain('Cookie');
+    put.mockRestore();
+  });
+
+  it('sets public s-maxage to PUBLIC_PAGE_S_MAXAGE_SECONDS on cacheable responses', async () => {
+    const put = vi.spyOn(caches.default, 'put');
+    const request = new Request('https://example.com/page/');
+    const cacheKey = new Request('https://example.com/page/?v=1');
+    await finalizeRequestResponse(new Response('ok'), {
+      request,
+      cacheKey,
+      executionContext: { waitUntil: () => {} },
+    });
+    const cached = put.mock.calls[0][1];
+    expect(cached.headers.get('cache-control')).toBe(`public, s-maxage=${PUBLIC_PAGE_S_MAXAGE_SECONDS}`);
     put.mockRestore();
   });
 });

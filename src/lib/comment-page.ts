@@ -55,6 +55,16 @@ function writeCachedRootCount(key: string, count: number): void {
   }
 }
 
+/**
+ * Drop the in-isolate root-count cache. Comment writes call this alongside
+ * purgeContentCache: the keys embed cacheVersion, which comments no longer
+ * bump, so a locally-purged post page would otherwise re-render with a
+ * stale threaded root count for up to the cache TTL.
+ */
+export function invalidateCommentRootCounts(): void {
+  commentRootCounts.clear();
+}
+
 /** Test-only: reset the in-isolate root-count cache. */
 export function resetCommentRootCountCache(): void {
   commentRootCounts.clear();

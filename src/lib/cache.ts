@@ -26,8 +26,10 @@ function optionsCacheKey(version: string | number): Request {
 // the options blob is bounded by CACHE_VERSION_MEMO_TTL_MS: a bump made
 // on PoP-A takes at most this long to be seen on PoP-B. In exchange we
 // avoid a D1 read on every loadOptions() call — worth the small
-// staleness for read-heavy endpoints.
-const CACHE_VERSION_MEMO_TTL_MS = 60_000;
+// staleness for read-heavy endpoints. Content/option writes bump the
+// stamp rarely, so a 5-minute bound is a good trade-off; comment writes
+// no longer bump it at all (see purgeContentCache).
+const CACHE_VERSION_MEMO_TTL_MS = 300_000;
 let cachedVersion: string | null = null;
 let cachedVersionAt = 0;
 
@@ -58,10 +60,17 @@ export function resetCacheVersionMemo(): void {
 }
 
 /**
- * Purge a list of public URLs from the edge cache.
- * Safe to call with empty array — returns immediately.
- * Relative URLs are skipped gracefully (no-op).
+ * Stamp a request URL with the current cacheVersion. Every public page
+ * cache key embeds this stamp so a version bump (content/option writes)
+ * makes every PoP miss on its next read — no purge needed. purgeContentCache
+ * reuses the same stamp to delete exact keys after comment writes.
  */
+export function withCacheVersion(requestUrl: string, cacheVersion?: string | number): string {
+  const url = new URL(requestUrl);
+  url.searchParams.set('__typecho_cache', String(cacheVersion || 0));
+  return url.toString();
+}
+
 export async function purgeCache(urls: string[]): Promise<void> {
   if (urls.length === 0) return;
   const cache = caches.default;
@@ -188,17 +197,36 @@ export function buildContentPurgeUrls(
 }
 
 /**
- * Purge content-related cache entries (index + feeds + specific post).
- * Does NOT purge the options cache — use purgeSiteCache for settings changes.
+ * Purge content-related page cache entries (index + feeds + post page).
+ *
+ * Comment writes no longer bump cacheVersion (that would invalidate the
+ * whole site on every comment). Instead this deletes the exact version-
+ * stamped keys for the affected URLs from the local PoP cache; other PoPs
+ * converge within the page s-maxage TTL. Best-effort: cache API errors
+ * and unknown URL shapes are ignored.
  */
 export async function purgeContentCache(
-  _siteUrl: string,
-  _cid?: number,
-  _related: ContentPurgeUrlsOptions = {},
+  siteUrl: string,
+  cacheVersion: string | number,
+  cid?: number,
+  related: ContentPurgeUrlsOptions = {},
 ): Promise<void> {
-  // Public page keys include cacheVersion. Every caller bumps that version
-  // before reaching this compatibility function, so deleting raw URLs cannot
-  // hit the stored keys and only adds Cache API work to the write path.
+  const urls = buildContentPurgeUrls(siteUrl, cid, related);
+  if (urls.length === 0) return;
+  const version = String(cacheVersion || 0);
+  const cache = caches.default;
+  await Promise.all(urls.map(async (url) => {
+    // A visitor may have stored the key with or without a trailing slash
+    // (both reach the same middleware path); delete both variants.
+    const candidates = new Set([url, url.endsWith('/') ? url.slice(0, -1) : url]);
+    for (const candidate of candidates) {
+      try {
+        await cache.delete(new Request(withCacheVersion(candidate, version)));
+      } catch {
+        // Best-effort purge — invalid URLs or cache errors are ignored.
+      }
+    }
+  }));
 }
 
 /**

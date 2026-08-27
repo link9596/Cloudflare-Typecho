@@ -1,7 +1,9 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { schema, type Database } from '@/db';
 import { hasPermission } from '@/lib/auth';
-import { bumpCacheVersion, purgeContentCache } from '@/lib/cache';
+import { purgeContentCache } from '@/lib/cache';
+import { invalidateSidebarSnapshot } from '@/lib/sidebar';
+import { invalidateCommentRootCounts } from '@/lib/comment-page';
 import type { SiteOptions } from '@/lib/options';
 import { doHook, type HookContext } from '@/lib/plugin';
 
@@ -213,12 +215,16 @@ export async function deleteSpamCommentsForUser(
 }
 
 export async function purgeCommentModerationCache(
-  db: Database,
   options: SiteOptions,
   cid?: number | null,
 ): Promise<void> {
-  await bumpCacheVersion(db);
-  await purgeContentCache(options.siteUrl || '', cid || undefined);
+  // Moderation changes comment lists/counts but not content: purge only the
+  // affected URLs on the local PoP instead of bumping cacheVersion (which
+  // would invalidate the whole site on every approve/delete). Cross-PoP
+  // convergence is bounded by the page s-maxage TTL.
+  await purgeContentCache(options.siteUrl || '', options.cacheVersion, cid || undefined);
+  invalidateSidebarSnapshot();
+  invalidateCommentRootCounts();
 }
 
 async function incrementCommentCount(db: Database, cid: number): Promise<void> {
