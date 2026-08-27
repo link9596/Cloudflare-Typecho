@@ -99,6 +99,8 @@ const allTables: SQLiteTable[] = [
   schema.fields,
   schema.loginFailures,
   schema.passwordResetRequests,
+  // 预渲染缓存表（本项目自建，非 PHP Typecho 原生表；isolate-boot 也会幂等创建）
+  schema.contentsRendered,
 ];
 
 /**

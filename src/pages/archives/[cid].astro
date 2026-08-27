@@ -54,7 +54,7 @@ if (!contentRow) {
     Component = templates.Page ?? defaultTemplates.Page!;
   }
 } else {
-  result = await preparePostData(ctx, cidNum, Astro.request.url, suppliedPassword, contentRow);
+  result = await preparePostData(ctx, cidNum, Astro.request.url, suppliedPassword, contentRow, Astro.locals.cfContext);
   if (result instanceof Response) {
     if (result.status !== 404) return result;
     Astro.response.status = 404;

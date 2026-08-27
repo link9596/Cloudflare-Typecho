@@ -30,7 +30,7 @@ let Component = templates.Page ?? defaultTemplates.Page!;
 
 // Prepare data
 const suppliedPassword = Astro.url.searchParams.get('password');
-let result = await preparePageData(ctx, cleanSlug, Astro.request.url, suppliedPassword, pageRow);
+let result = await preparePageData(ctx, cleanSlug, Astro.request.url, suppliedPassword, pageRow, Astro.locals.cfContext);
 if (result instanceof Response) {
   if (result.status !== 404) return result;
   Astro.response.status = 404;

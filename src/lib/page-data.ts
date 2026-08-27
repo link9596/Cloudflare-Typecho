@@ -8,14 +8,14 @@
 import { eq, and, desc, asc, lt, gt, or, sql } from 'drizzle-orm';
 import { schema, type Database } from '@/db';
 import type { SiteOptions } from '@/lib/options';
-import { loadSidebarData, loadNavPages, type SidebarData } from '@/lib/sidebar';
+import { loadSidebarAndNav, loadNavPages, type SidebarData } from '@/lib/sidebar';
 import { buildFtsMatchExpression, contentsFtsTableRef, FTS_MIN_CHARS, isFtsAvailable } from '@/lib/fulltext';
 import {
   buildPermalink, buildAuthorLink,
   buildCategoryLink, buildTagLink, buildSearchLink,
 } from '@/lib/content';
-import { renderCommentText, renderContentExcerpt, renderMarkdownFiltered } from '@/lib/markdown';
-import { getRenderedContent, hashSourceWithPlugins } from '@/lib/rendered-content';
+import { renderCommentText } from '@/lib/markdown';
+import { getRenderedContent, getRenderedExcerpts } from '@/lib/rendered-content';
 import { paginate } from '@/lib/pagination';
 import { generateCommentToken } from '@/lib/auth';
 import { buildGravatarUrl } from '@/lib/gravatar';
@@ -35,8 +35,29 @@ type CategoryEntry = { name: string; slug: string; permalink: string };
 type CategoryMap = Map<number, CategoryEntry[]>;
 type AuthorEntry = { uid: number; name: string | null; screenName: string | null };
 type AuthorMap = Map<number, AuthorEntry>;
-type RenderedEntry = { renderedExcerpt: string; sourceHash: string };
-type RenderedMap = Map<number, RenderedEntry>;
+type ListContentRow = {
+  cid: number;
+  title: string | null;
+  slug: string | null;
+  type: string | null;
+  created: number | null;
+  modified: number | null;
+  commentsNum: number | null;
+  authorId: number | null;
+  status: string | null;
+};
+/** 列表查询只取必要列（不含 text 大列），摘要走预渲染表。 */
+const LIST_SELECT_FIELDS = {
+  cid: schema.contents.cid,
+  title: schema.contents.title,
+  slug: schema.contents.slug,
+  type: schema.contents.type,
+  created: schema.contents.created,
+  modified: schema.contents.modified,
+  commentsNum: schema.contents.commentsNum,
+  authorId: schema.contents.authorId,
+  status: schema.contents.status,
+} as const;
 const EMPTY_SIDEBAR: SidebarData = {
   recentPosts: [],
   recentComments: [],
@@ -46,19 +67,21 @@ const EMPTY_SIDEBAR: SidebarData = {
 // ─── Helpers ────────────────────────────────────────────────────────────
 async function loadCommon(ctx: RequestContext, requestUrl: string, withSidebar = true) {
   const { db, options, urls, user, isLoggedIn } = ctx;
-  const [sidebarData, pages] = await Promise.all([
-    withSidebar
-      ? loadSidebarData(
-          ctx,
-          db,
-          urls.siteUrl,
-          options.permalinkPattern as string | undefined,
-          options.categoryPattern as string | undefined,
-          options.cacheVersion,
-        )
-      : Promise.resolve(EMPTY_SIDEBAR),
-    loadNavPages(db, urls.siteUrl, options.pagePattern as string | undefined, options.cacheVersion),
-  ]);
+  const loaded = withSidebar
+    ? await loadSidebarAndNav(
+        ctx,
+        db,
+        urls.siteUrl,
+        options.permalinkPattern as string | undefined,
+        options.categoryPattern as string | undefined,
+        options.pagePattern as string | undefined,
+        options.cacheVersion,
+      )
+    : {
+        sidebarData: EMPTY_SIDEBAR,
+        pages: await loadNavPages(db, urls.siteUrl, options.pagePattern as string | undefined, options.cacheVersion),
+      };
+  const { sidebarData, pages } = loaded;
   const currentPath = new URL(requestUrl).pathname;
   return { options, urls, user, isLoggedIn, pages, sidebarData, currentPath, pluginCtx: ctx };
 }
@@ -169,32 +192,13 @@ function mapPostCategories(
  * 批量查询文章的预渲染摘要。
  * 命中缓存的文章可以直接用，避免每篇都执行 Markdown 渲染。
  */
-async function loadRenderedMap(db: Database, postIds: number[]): Promise<RenderedMap> {
-  const map: RenderedMap = new Map();
-  if (postIds.length === 0) return map;
-  const rows = await db
-    .select({
-      cid: schema.contentsRendered.cid,
-      renderedExcerpt: schema.contentsRendered.renderedExcerpt,
-      sourceHash: schema.contentsRendered.sourceHash,
-    })
-    .from(schema.contentsRendered)
-    .where(sql`${schema.contentsRendered.cid} IN (${sql.join(postIds.map(id => sql`${id}`), sql`, `)})`);
-  for (const row of rows) {
-    map.set(row.cid, {
-      renderedExcerpt: row.renderedExcerpt || '',
-      sourceHash: row.sourceHash || '',
-    });
-  }
-  return map;
-}
 function toPostListItem(
-  post: ContentRow,
+  post: ListContentRow,
   authorMap: AuthorMap,
   categoryMap: CategoryMap,
   siteUrl: string,
   permalinkPattern: string | null | undefined,
-  renderedMap: RenderedMap,
+  excerptMap: Map<number, string>,
 ): PostListItem {
   const author = authorMap.get(post.authorId || 0);
   const categories = categoryMap.get(post.cid) || [];
@@ -203,15 +207,8 @@ function toPostListItem(
     siteUrl,
     permalinkPattern,
   );
-  // 优先用预渲染摘要，未命中则实时渲染
-  const sourceHash = hashSourceWithPlugins(post.text || '');
-  const cached = renderedMap.get(post.cid);
-  const hasMoreMarker = (post.text || '').includes('<!--more-->');
-  const excerpt = cached?.sourceHash === sourceHash && cached.renderedExcerpt
-    ? (hasMoreMarker
-        ? `${cached.renderedExcerpt}<p class="more"><a href="${permalink}">- 阅读剩余部分 -</a></p>`
-        : cached.renderedExcerpt)
-    : renderContentExcerpt(post.text || '', '- 阅读剩余部分 -', permalink);
+  // 摘要由 getRenderedExcerpts 统一准备（预渲染表/LRU 命中或实时渲染回填）
+  const excerpt = excerptMap.get(post.cid) ?? '';
   return {
     cid: post.cid,
     title: post.title || '无标题',
@@ -312,8 +309,8 @@ async function prepareArchiveData(
   const makeListStatement = (cursor: { created: number; cid: number } | null) => {
     const q = applyJoins(
       (hasJoin || hasFts)
-        ? db.select({ content: schema.contents }).from(schema.contents)
-        : db.select().from(schema.contents),
+        ? db.select({ content: { ...LIST_SELECT_FIELDS } }).from(schema.contents)
+        : db.select({ ...LIST_SELECT_FIELDS }).from(schema.contents),
     );
     const where = cursor
       ? and(
@@ -390,15 +387,13 @@ async function prepareArchiveData(
       ? await makeListStatement({ created: boundary.created ?? 0, cid: boundary.cid ?? 0 })
       : [];
   }
-  const rawPosts: ContentRow[] = (hasJoin || hasFts)
-    ? (posts as { content: ContentRow }[]).map(p => p.content)
-    : (posts as ContentRow[]);
+  const rawPosts: ListContentRow[] = (hasJoin || hasFts)
+    ? (posts as { content: ListContentRow }[]).map(p => p.content)
+    : (posts as ListContentRow[]);
   const authorIds = [...new Set(rawPosts.map(p => p.authorId).filter((id): id is number => Boolean(id)))];
   const postIds = rawPosts.map(p => p.cid).filter((id): id is number => id !== null);
   let authorMap = params.authorOverride;
   let categoryRows: Array<{ cid: number; mid: number; name: string | null; slug: string | null }> = [];
-  // 批量查询预渲染摘要（和分类、作者查询并行）
-  const renderedMapPromise = loadRenderedMap(db, postIds);
   if (postIds.length > 0) {
     const categoryStatement = db
       .select({
@@ -439,13 +434,29 @@ async function prepareArchiveData(
     urls.siteUrl,
     options.categoryPattern as string | undefined,
   );
-  const renderedMap = await renderedMapPromise;
+  // 批量获取列表页摘要：预渲染表/LRU 命中直接返回；未命中并发渲染并一次性写回。
+  // 列表查询不取 text 大列，摘要有效性由 renderedAt >= modified 判定。
+  const waitUntil = (locals as { cfContext?: { waitUntil?: (p: Promise<unknown>) => void } }).cfContext?.waitUntil;
+  const excerptMap = await getRenderedExcerpts(
+    db,
+    rawPosts.map(p => ({
+      cid: p.cid,
+      modified: p.modified,
+      moreText: '- 阅读剩余部分 -',
+      permalink: buildPermalink(
+        { cid: p.cid, slug: p.slug, type: p.type, created: p.created, category: (categoryMap.get(p.cid) || [])[0]?.slug },
+        urls.siteUrl,
+        options.permalinkPattern as string | undefined,
+      ),
+    })),
+    { ctx, waitUntil },
+  );
   return {
     ...common,
     archiveTitle: params.archiveTitle,
     archiveType: params.archiveType,
     posts: rawPosts.map(p =>
-      toPostListItem(p, authorMap, categoryMap, urls.siteUrl, options.permalinkPattern as string | undefined, renderedMap)
+      toPostListItem(p, authorMap, categoryMap, urls.siteUrl, options.permalinkPattern as string | undefined, excerptMap)
     ),
     pagination: pg,
   };
@@ -477,6 +488,7 @@ export async function preparePostData(
   requestUrl: string,
   suppliedPassword: string | null,
   preloadedRow?: ContentRow | null,
+  executionContext?: { waitUntil?: (p: Promise<unknown>) => void } | null,
 ): Promise<ThemePostProps | Response> {
   const { db, options, urls, user, isLoggedIn } = ctx;
   const contentRow = preloadedRow ?? await db.query.contents.findFirst({
@@ -498,6 +510,7 @@ export async function preparePostData(
       relatedMetas,
       prevPostRows,
       nextPostRows,
+      renderedRows,
     ],
     commentPage,
   ] = await Promise.all([
@@ -529,6 +542,16 @@ export async function preparePostData(
         .where(and(publishedPostCondition(), gt(schema.contents.created, contentRow.created || 0)))
         .orderBy(asc(schema.contents.created))
         .limit(1),
+      db
+        .select({
+          renderedHtml: schema.contentsRendered.renderedHtml,
+          renderedExcerpt: schema.contentsRendered.renderedExcerpt,
+          sourceHash: schema.contentsRendered.sourceHash,
+          renderedAt: schema.contentsRendered.renderedAt,
+        })
+        .from(schema.contentsRendered)
+        .where(eq(schema.contentsRendered.cid, cidNum))
+        .limit(1),
     ]),
     loadCommentPage(db, cidNum, options, requestUrl, contentRow.commentsNum ?? null, options.cacheVersion),
   ]);
@@ -558,7 +581,7 @@ export async function preparePostData(
   // 使用预渲染缓存：命中则直接返回，未命中则实时渲染并异步回填
     const renderedContent = hasPassword && !passwordVerified
     ? '<p>此内容已加密，请输入密码访问。</p>'
-    : (await getRenderedContent(db, contentRow.cid, contentRow.text || '', { ctx })).html;
+    : (await getRenderedContent(db, contentRow.cid, contentRow.text || '', { ctx, preloaded: renderedRows[0] ?? null, waitUntil: executionContext?.waitUntil })).html;
   // Generate CSRF token for comment form, bound to cid so that pages
   // visited via email/RSS without a referer still validate.
   const securityToken = options.commentsAntiSpam
@@ -602,6 +625,7 @@ export async function preparePageData(
   requestUrl: string,
   suppliedPassword: string | null,
   preloadedRow?: ContentRow | null,
+  executionContext?: { waitUntil?: (p: Promise<unknown>) => void } | null,
 ): Promise<ThemePageProps | Response> {
   const { db, options, urls, user, isLoggedIn } = ctx;
   const pageRow = preloadedRow ?? await db.query.contents.findFirst({
@@ -632,7 +656,7 @@ export async function preparePageData(
   // 使用预渲染缓存
     const renderedContent = hasPassword && !passwordVerified
     ? '<p>此内容已加密，请输入密码访问。</p>'
-    : (await getRenderedContent(db, pageRow.cid, pageRow.text || '', { ctx })).html;
+    : (await getRenderedContent(db, pageRow.cid, pageRow.text || '', { ctx, waitUntil: executionContext?.waitUntil })).html;
   // Generate CSRF token for comment form, bound to cid so that pages
   // visited via email/RSS without a referer still validate.
   const securityToken = options.commentsAntiSpam

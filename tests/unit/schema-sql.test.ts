@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { generateCreateSQL } from '@/lib/schema-sql';
 
 describe('generateCreateSQL', () => {
-  it('generates CREATE TABLE statements for all 9 tables', () => {
+  it('generates CREATE TABLE statements for all 10 tables (9 Typecho-compatible + rendered cache)', () => {
     const stmts = generateCreateSQL();
 
     const createTableStmts = stmts.filter(s => s.startsWith('CREATE TABLE IF NOT EXISTS'));
-    expect(createTableStmts.length).toBe(9);
+    expect(createTableStmts.length).toBe(10);
 
     const tableNames = createTableStmts.map(s => {
       const match = s.match(/`(typecho_\w+)`/);
@@ -21,6 +21,7 @@ describe('generateCreateSQL', () => {
     expect(tableNames).toContain('typecho_fields');
     expect(tableNames).toContain('typecho_login_failures');
     expect(tableNames).toContain('typecho_password_reset_requests');
+    expect(tableNames).toContain('typecho_contents_rendered');
   });
 
   it('generates CREATE INDEX statements for unique indexes', () => {

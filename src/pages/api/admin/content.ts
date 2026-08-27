@@ -6,7 +6,9 @@ import { isAdminActionResponse, requireAdminAction } from '@/lib/admin-auth';
 import { normalizeSlug, readAdminFormOrError } from '@/lib/input';
 import { resolveUniqueContentSlug, resolveUniqueMetaSlug } from '@/lib/slug';
 import { applyFilter, doHook } from '@/lib/plugin';
+import { buildPermalink } from '@/lib/content';
 import { bumpCacheVersion } from '@/lib/cache';
+import { schedulePublicCacheWarm } from '@/lib/rendered-content';
 import { jsonError, jsonOk } from '@/lib/http';
 import { eq, and, sql } from 'drizzle-orm';
 import { validateFilteredContent, WriteFilterError } from '@/lib/write-filter';
@@ -303,6 +305,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     await purgeContentAndRelatedCache(db, options, newCid, finishData as typeof schema.contents.$inferSelect);
 
+    // 写时预热：后台预渲染 + 自请求预热公开页面（仅非草稿且公开状态）
+    if (!isDraft && (status === 'publish' || status === 'hidden')) {
+      schedulePublicCacheWarm(
+        db,
+        pluginCtx,
+        { cid: newCid, text },
+        [
+          buildPermalink(
+            { cid: newCid, slug: contentData.slug as string | null, type: contentData.type as string | null, created: contentData.created as number | null },
+            options.siteUrl || '',
+            options.permalinkPattern as string | undefined,
+          ),
+          (options.siteUrl || '').replace(/\/$/, '') + '/',
+          (options.siteUrl || '').replace(/\/$/, '') + '/feed',
+        ],
+        locals.cfContext?.waitUntil,
+      );
+    }
     const editUrl = type === 'page' ? `/admin/write-page?cid=${newCid}` : `/admin/write-post?cid=${newCid}`;
     return new Response(null, {
       status: 302,
@@ -401,6 +421,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ...contentData,
     });
 
+    // 写时预热：后台预渲染 + 自请求预热公开页面（仅非草稿且公开状态）
+    if (!isDraft && (status === 'publish' || status === 'hidden')) {
+      schedulePublicCacheWarm(
+        db,
+        pluginCtx,
+        { cid: cid, text },
+        [
+          buildPermalink(
+            { cid: cid, slug: contentData.slug as string | null, type: contentData.type as string | null, created: contentData.created as number | null },
+            options.siteUrl || '',
+            options.permalinkPattern as string | undefined,
+          ),
+          (options.siteUrl || '').replace(/\/$/, '') + '/',
+          (options.siteUrl || '').replace(/\/$/, '') + '/feed',
+        ],
+        locals.cfContext?.waitUntil,
+      );
+    }
     const editUrl = type === 'page' ? `/admin/write-page?cid=${cid}` : `/admin/write-post?cid=${cid}`;
     return new Response(null, {
       status: 302,
@@ -443,6 +481,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       db.delete(schema.comments).where(eq(schema.comments.cid, cid)),
       db.delete(schema.fields).where(eq(schema.fields.cid, cid)),
       db.delete(schema.contents).where(eq(schema.contents.cid, cid)),
+      db.delete(schema.contentsRendered).where(eq(schema.contentsRendered.cid, cid)),
     );
     await db.batch(deleteStatements as [any, ...any[]]);
 
