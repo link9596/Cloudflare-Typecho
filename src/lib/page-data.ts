@@ -436,7 +436,9 @@ async function prepareArchiveData(
   );
   // 批量获取列表页摘要：预渲染表/LRU 命中直接返回；未命中并发渲染并一次性写回。
   // 列表查询不取 text 大列，摘要有效性由 renderedAt >= modified 判定。
-  const waitUntil = (locals as { cfContext?: { waitUntil?: (p: Promise<unknown>) => void } }).cfContext?.waitUntil;
+  // workerd 宿主方法 waitUntil 必须以方法形式调用（裸引用会抛 Illegal invocation），此处绑定上下文
+  const cfContext = (locals as { cfContext?: { waitUntil?: (p: Promise<unknown>) => void } }).cfContext;
+  const waitUntil = cfContext?.waitUntil ? (p: Promise<unknown>) => cfContext!.waitUntil!(p) : undefined;
   const excerptMap = await getRenderedExcerpts(
     db,
     rawPosts.map(p => ({
@@ -491,6 +493,8 @@ export async function preparePostData(
   executionContext?: { waitUntil?: (p: Promise<unknown>) => void } | null,
 ): Promise<ThemePostProps | Response> {
   const { db, options, urls, user, isLoggedIn } = ctx;
+  // waitUntil 必须以宿主对象方法形式调用（workerd 宿主方法裸引用会抛 Illegal invocation）
+  const waitUntil = executionContext?.waitUntil ? (p: Promise<unknown>) => executionContext!.waitUntil!(p) : undefined;
   const contentRow = preloadedRow ?? await db.query.contents.findFirst({
     where: eq(schema.contents.cid, cidNum),
   });
@@ -581,7 +585,7 @@ export async function preparePostData(
   // 使用预渲染缓存：命中则直接返回，未命中则实时渲染并异步回填
     const renderedContent = hasPassword && !passwordVerified
     ? '<p>此内容已加密，请输入密码访问。</p>'
-    : (await getRenderedContent(db, contentRow.cid, contentRow.text || '', { ctx, preloaded: renderedRows[0] ?? null, waitUntil: executionContext?.waitUntil })).html;
+    : (await getRenderedContent(db, contentRow.cid, contentRow.text || '', { ctx, preloaded: renderedRows[0] ?? null, waitUntil })).html;
   // Generate CSRF token for comment form, bound to cid so that pages
   // visited via email/RSS without a referer still validate.
   const securityToken = options.commentsAntiSpam
@@ -628,6 +632,8 @@ export async function preparePageData(
   executionContext?: { waitUntil?: (p: Promise<unknown>) => void } | null,
 ): Promise<ThemePageProps | Response> {
   const { db, options, urls, user, isLoggedIn } = ctx;
+  // waitUntil 必须以宿主对象方法形式调用（workerd 宿主方法裸引用会抛 Illegal invocation）
+  const waitUntil = executionContext?.waitUntil ? (p: Promise<unknown>) => executionContext!.waitUntil!(p) : undefined;
   const pageRow = preloadedRow ?? await db.query.contents.findFirst({
     where: and(eq(schema.contents.slug, cleanSlug), eq(schema.contents.type, 'page')),
   });
@@ -656,7 +662,7 @@ export async function preparePageData(
   // 使用预渲染缓存
     const renderedContent = hasPassword && !passwordVerified
     ? '<p>此内容已加密，请输入密码访问。</p>'
-    : (await getRenderedContent(db, pageRow.cid, pageRow.text || '', { ctx, waitUntil: executionContext?.waitUntil })).html;
+    : (await getRenderedContent(db, pageRow.cid, pageRow.text || '', { ctx, waitUntil })).html;
   // Generate CSRF token for comment form, bound to cid so that pages
   // visited via email/RSS without a referer still validate.
   const securityToken = options.commentsAntiSpam

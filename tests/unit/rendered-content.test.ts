@@ -63,7 +63,7 @@ describe('freshness helpers', () => {
 
 describe('getRenderedContent()', () => {
   it('renders on miss and backfills the prerender table', async () => {
-    const res = await getRenderedContent(testDb, 1, '## Hello\n\nWorld');
+    const res = await getRenderedContent((testDb as any), 1, '## Hello\n\nWorld');
     expect(res.html).toContain('<h2>Hello</h2>');
     const row = await testDb.query.contentsRendered.findFirst();
     expect(row?.cid).toBe(1);
@@ -72,16 +72,16 @@ describe('getRenderedContent()', () => {
   });
 
   it('serves a fresh prerendered row consistently across calls', async () => {
-    await getRenderedContent(testDb, 7, 'body');
-    const first = await getRenderedContent(testDb, 7, 'body');
-    const second = await getRenderedContent(testDb, 7, 'body');
+    await getRenderedContent((testDb as any), 7, 'body');
+    const first = await getRenderedContent((testDb as any), 7, 'body');
+    const second = await getRenderedContent((testDb as any), 7, 'body');
     expect(first.html).toBe(second.html);
     expect(first.plainExcerpt).toBe('body');
   });
 
   it('re-renders when the content changes (hash mismatch)', async () => {
-    await getRenderedContent(testDb, 3, 'v1');
-    const res = await getRenderedContent(testDb, 3, 'v2 **bold**');
+    await getRenderedContent((testDb as any), 3, 'v1');
+    const res = await getRenderedContent((testDb as any), 3, 'v2 **bold**');
     expect(res.html).toContain('<strong>bold</strong>');
     const row = await testDb.query.contentsRendered.findFirst();
     expect(row?.renderedHtml).toContain('<strong>');
@@ -94,7 +94,7 @@ describe('getRenderedExcerpts()', () => {
       { cid: 1, title: 'A', type: 'post', status: 'publish', created: 100, modified: 100, text: '**excerpt A**' },
       { cid: 2, title: 'B', type: 'post', status: 'publish', created: 100, modified: 100, text: 'excerpt B' },
     ]);
-    const map = await getRenderedExcerpts(testDb, [
+    const map = await getRenderedExcerpts((testDb as any), [
       { cid: 1, modified: 100, moreText: '- 阅读剩余部分 -', permalink: '/archives/1/' },
       { cid: 2, modified: 100, moreText: '- 阅读剩余部分 -', permalink: '/archives/2/' },
     ]);
@@ -110,7 +110,7 @@ describe('getRenderedExcerpts()', () => {
       cid: 10, title: 'C', type: 'post', status: 'publish', created: 100, modified: 100,
       text: 'part1\n\n<!--more-->\n\npart2',
     });
-    const map = await getRenderedExcerpts(testDb, [
+    const map = await getRenderedExcerpts((testDb as any), [
       { cid: 10, modified: 100, moreText: '更多', permalink: '/archives/10/' },
     ]);
     expect(map.get(10)).toContain('class="more"');
@@ -120,18 +120,18 @@ describe('getRenderedExcerpts()', () => {
     await testDb.insert(schema.contents).values({
       cid: 20, title: 'D', type: 'post', status: 'publish', created: 100, modified: 100, text: 'cached body',
     });
-    await getRenderedExcerpts(testDb, [{ cid: 20, modified: 100, moreText: '更多', permalink: '/archives/20/' }]);
+    await getRenderedExcerpts((testDb as any), [{ cid: 20, modified: 100, moreText: '更多', permalink: '/archives/20/' }]);
     // Same modified → cached (row still fresh).
-    const cached = await getRenderedExcerpts(testDb, [{ cid: 20, modified: 100, moreText: '更多', permalink: '/archives/20/' }]);
+    const cached = await getRenderedExcerpts((testDb as any), [{ cid: 20, modified: 100, moreText: '更多', permalink: '/archives/20/' }]);
     expect(cached.get(20)).toContain('cached body');
     // modified advanced past renderedAt → re-render from contents.text.
-    const stale = await getRenderedExcerpts(testDb, [{ cid: 20, modified: 999999999, moreText: '更多', permalink: '/archives/20/' }]);
+    const stale = await getRenderedExcerpts((testDb as any), [{ cid: 20, modified: 999999999, moreText: '更多', permalink: '/archives/20/' }]);
     expect(stale.get(20)).toContain('cached body');
   });
 
   it('invalidateRenderedContent removes the prerender row', async () => {
-    await getRenderedContent(testDb, 5, 'x');
-    await invalidateRenderedContent(testDb, 5);
+    await getRenderedContent((testDb as any), 5, 'x');
+    await invalidateRenderedContent((testDb as any), 5);
     const rows = await testDb.select().from(schema.contentsRendered);
     expect(rows).toHaveLength(0);
   });

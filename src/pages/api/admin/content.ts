@@ -154,6 +154,8 @@ async function purgeContentAndRelatedCache(
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const admin = await requireAdminAction(request, 'contributor');
+  // workerd 宿主方法 waitUntil 必须以方法形式调用（裸引用会抛 Illegal invocation）
+  const waitUntil = locals.cfContext?.waitUntil ? (p: Promise<unknown>) => locals.cfContext!.waitUntil(p) : undefined;
   if (isAdminActionResponse(admin)) return admin;
   const db = admin.db;
   const options = admin.options;
@@ -320,7 +322,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           (options.siteUrl || '').replace(/\/$/, '') + '/',
           (options.siteUrl || '').replace(/\/$/, '') + '/feed',
         ],
-        locals.cfContext?.waitUntil,
+        waitUntil,
       );
     }
     const editUrl = type === 'page' ? `/admin/write-page?cid=${newCid}` : `/admin/write-post?cid=${newCid}`;
@@ -436,7 +438,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           (options.siteUrl || '').replace(/\/$/, '') + '/',
           (options.siteUrl || '').replace(/\/$/, '') + '/feed',
         ],
-        locals.cfContext?.waitUntil,
+        waitUntil,
       );
     }
     const editUrl = type === 'page' ? `/admin/write-page?cid=${cid}` : `/admin/write-post?cid=${cid}`;
