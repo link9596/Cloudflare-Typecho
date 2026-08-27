@@ -40,7 +40,7 @@
 | 数据库 | Cloudflare D1 (SQLite) | — |
 | ORM | Drizzle ORM | 0.45.x |
 | 文件存储 | Cloudflare R2 | — |
-| 密码哈希 | PBKDF2-SHA256 | 600,000 迭代 + 16B salt（更低迭代的存量 hash 在登录时机会式重哈希） |
+| 密码哈希 | PBKDF2-SHA256 | 100,000 迭代 + 16B salt（更低迭代的存量 hash 在登录时机会式重哈希） |
 | 测试 | Vitest | 4.x |
 | 语言 | TypeScript | 7.x（ESLint / typescript-eslint 侧通过 `typescript-eslint-typescript` 别名固定使用 TS 6.0.x API） |
 
@@ -116,6 +116,7 @@ src/lib/constants.ts   — 跨模块常量（密码最小长度、slug 后缀上
 | `typecho_fields` | 扩展字段 | (cid, name) |
 | `typecho_login_failures` | 登录限速（D1 持久化） | ip |
 | `typecho_password_reset_requests` | 密码重置请求（限速 + 一次性令牌哈希） | email |
+| `typecho_contents_rendered` | **派生缓存表**（本项目自建，非 PHP Typecho 原生表）：文章预渲染 HTML/摘要/sourceHash/renderedAt | cid |
 
 **不可变约束**：
 - 表名必须保持 `typecho_*` 前缀，**不可重命名**
@@ -124,6 +125,7 @@ src/lib/constants.ts   — 跨模块常量（密码最小长度、slug 后缀上
 - **禁止手动修改 `drizzle/` 目录下的迁移文件**
 - 建表 SQL 由 `src/lib/schema-sql.ts` 在运行时从 Drizzle schema 反射生成（`generateCreateSQL()` 同时输出 CREATE TABLE 与 CREATE INDEX；中间件首次命中时会在后台幂等地补齐生产库索引）
 - FTS5 搜索索引（`typecho_contents_fts` 虚拟表 + 同步触发器）由运行时引导创建/回填（`src/lib/fulltext.ts`、`isolate-boot.ts`），属于派生索引，**不纳入 Drizzle schema 与迁移**；新库安装时由 `generateCreateSQL()` 一并创建
+- 预渲染缓存表 `typecho_contents_rendered` 同属派生缓存表：**不修改任何原生表结构**，运行时由 `isolate-boot.ts` 幂等创建，已纳入 `generateCreateSQL()`；列表页有效性用 `renderedAt >= modified` 判定，详情页用 `sourceHash`（内容+插件+more 标记）判定，详见 `src/lib/rendered-content.ts`
 - D1 不支持真实事务；批量改写应使用 `db.batch([...])` 单次往返
 - 评论的「能否审核」必须查 `contents.authorId`，禁止以 `comments.ownerId` 作为权限判定来源（ownerId 仅是内容作者变更前的历史快照）
 
@@ -316,11 +318,11 @@ WebDAV 插件的文件管理器是完整参考实现：`admin:page` 返回包含
 ### 8.1 密码哈希
 
 - 算法：PBKDF2-SHA256
-- 迭代次数：600,000
+- 迭代次数：100,000
 - Salt 长度：16 字节
 - 存储格式：`$PBKDF2$iterations$salt$hash`
 - 位于 `src/lib/auth.ts`
-- `passwordHashNeedsRehash(hash)` 检测低于当前迭代次数的存量 hash；`/api/users/login` 命中时机会式重哈希为 600k
+- `passwordHashNeedsRehash(hash)` 检测低于当前迭代次数的存量 hash；`/api/users/login` 命中时机会式重哈希为 100k
 
 ### 8.2 Session Token
 
@@ -405,7 +407,7 @@ WebDAV 插件的文件管理器是完整参考实现：`admin:page` 返回包含
 
 Cloudflare Workers 是单线程单 isolate，以下模块级变量是安全的：
 - `src/lib/plugin.ts`：`pluginRegistry` 与 loader 在启动时登记；`hookRegistry` 在插件首次激活时幂等写入，初始化完成后只读；`initialisingPlugins` 合并并发初始化
-- `src/lib/cache.ts`：`cacheVersion` memo（60s）+ options 版本戳缓存（Cache API）
+- `src/lib/cache.ts`：`cacheVersion` memo（5 分钟）+ options 版本戳缓存（Cache API）；评论写路径不再 bump 全站版本戳，改为 `purgeContentCache` 定向清除受影响 URL（本地 PoP）+ s-maxage TTL 跨 PoP 收敛
 - `src/lib/options.ts`：`optionSnapshots` / `pendingOptionLoads`（WeakMap，5 分钟快照 + 并发合并）
 - `src/lib/sidebar.ts`：`navSnapshots` 等版本化快照（WeakMap）
 - `src/lib/comment-page.ts`：`commentRootCounts`（按 cacheVersion 键控的根评论计数缓存，TTL + 条数上限）

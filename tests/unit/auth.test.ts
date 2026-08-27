@@ -271,17 +271,17 @@ describe('PBKDF2 password hashing', () => {
     // ['', 'PBKDF2', iterations, salt, hash]
     expect(parts).toHaveLength(5);
     expect(parts[1]).toBe('PBKDF2');
-    expect(parseInt(parts[2], 10)).toBe(600000);
+    expect(parseInt(parts[2], 10)).toBe(PBKDF2_ITERATIONS);
     expect(parts[3].length).toBeGreaterThan(0); // hex salt
     expect(parts[4]).toMatch(/^[a-f0-9]{64}$/); // SHA-256 hash = 64 hex chars
   });
 
-  it('verifies legacy 100k-iteration hashes against current 600k default', async () => {
+  it('verifies legacy lower-iteration hashes against the current default', async () => {
     // Legacy hashes embed their iteration count, so verify still works
     // even after the default was raised (G1-6 forward compatibility).
     const password = 'legacy-pw';
     // Fixed legacy hash format with 100000 iterations.
-    const legacyIter = 100000;
+    const legacyIter = 50000; // below the current default — exercises the embedded-count path
     // Recreate via the same crypto.subtle call shape: pretend we have a
     // pre-existing $PBKDF2$100000$... hash. Easiest reliable way is to
     // emit one ourselves with a small helper; here we instead just
@@ -568,11 +568,11 @@ describe('shouldUseSecureCookie()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// G1-6 PBKDF2 600k + opportunistic upgrade
+// G1-6 PBKDF2 100k + opportunistic upgrade
 // ---------------------------------------------------------------------------
 describe('passwordHashNeedsRehash()', () => {
   it('flags hashes with iterations below current default', () => {
-    const legacy = `$PBKDF2$100000$salt$${'a'.repeat(64)}`;
+    const legacy = `$PBKDF2$50000$salt$${'a'.repeat(64)}`; // below the 100k default
     expect(passwordHashNeedsRehash(legacy)).toBe(true);
   });
 
