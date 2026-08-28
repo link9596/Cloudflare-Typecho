@@ -9,6 +9,7 @@ import {
   resolveRequestTarget,
 } from '@/lib/request-bootstrap';
 import { withCacheVersion } from '@/lib/cache';
+import { warmRenderedOnCacheHit } from '@/lib/rendered-content';
 import { eq, and } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { publishedPostCondition } from '@/lib/content-visibility';
@@ -66,6 +67,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   const { db, options, pluginCtx } = bootstrap.core;
   const activatedIds = parseActivatedPlugins(options.activatedPlugins as string | undefined);
+  // workerd 宿主方法 waitUntil 必须以方法形式调用（裸引用会抛 Illegal invocation）
+  const cfWait = context.locals.cfContext;
+  const waitUntil = cfWait?.waitUntil ? (p: Promise<unknown>) => cfWait.waitUntil(p) : undefined;
 
   // ── Edge Cache Layer ──────────────────────────────────────────────────────
   const isGetRequest = context.request.method === 'GET';
@@ -88,6 +92,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (cacheKey && activatedIds.length === 0) {
     const cached = await caches.default.match(cacheKey);
     if (cached) {
+    // 缓存命中时后台预热详情页预渲染（懒回填只发生在缓存 miss，命中会跳过 Astro 路由）
+    if (cached && path.startsWith('/archives/')) {
+      const cidMatch = path.match(/^\/archives\/(\d+)\/?$/);
+      if (cidMatch && waitUntil) {
+        warmRenderedOnCacheHit(db, activatedIds, parseInt(cidMatch[1], 10), options.cacheVersion, waitUntil);
+      }
+    }
       return await finalizeRequestResponse(cached, { request: context.request, pluginCtx });
     }
   }
@@ -118,6 +129,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (cacheKey) {
     const cached = await caches.default.match(cacheKey);
     if (cached) {
+    // 缓存命中时后台预热详情页预渲染（懒回填只发生在缓存 miss，命中会跳过 Astro 路由）
+    if (cached && path.startsWith('/archives/')) {
+      const cidMatch = path.match(/^\/archives\/(\d+)\/?$/);
+      if (cidMatch && waitUntil) {
+        warmRenderedOnCacheHit(db, activatedIds, parseInt(cidMatch[1], 10), options.cacheVersion, waitUntil);
+      }
+    }
       return await finalizeRequestResponse(cached, { request: context.request, pluginCtx });
     }
   }

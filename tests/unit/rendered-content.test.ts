@@ -13,6 +13,8 @@ import {
   pluginPartOf,
   hasMoreOf,
   resetRenderedLru,
+  warmRenderedOnCacheHit,
+  resetWarmedContentKeys,
   hashSource,
 } from '@/lib/rendered-content';
 
@@ -134,5 +136,35 @@ describe('getRenderedExcerpts()', () => {
     await invalidateRenderedContent((testDb as any), 5);
     const rows = await testDb.select().from(schema.contentsRendered);
     expect(rows).toHaveLength(0);
+  });
+});
+describe('warmRenderedOnCacheHit()', () => {
+  it('renders and backfills the prerender table on cache hit', async () => {
+    await testDb.insert(schema.contents).values({
+      cid: 50, title: 'W', type: 'post', status: 'publish', created: 100, modified: 100, text: 'warm body **bold**',
+    });
+    const tasks: Promise<unknown>[] = [];
+    warmRenderedOnCacheHit(testDb as any, [], 50, 7, (p) => { tasks.push(p); });
+    await Promise.all(tasks);
+    const row = await testDb.query.contentsRendered.findFirst({ where: (r, { eq }) => eq(r.cid, 50) });
+    expect(row?.renderedHtml).toContain('<strong>bold</strong>');
+  });
+
+  it('dedupes by (cacheVersion, cid), re-warms on version bump and after reset', async () => {
+    await testDb.insert(schema.contents).values({
+      cid: 51, title: 'W2', type: 'post', status: 'publish', created: 100, modified: 100, text: 'body2',
+    });
+    let count = 0;
+    const tasks: Promise<unknown>[] = [];
+    const waitFn = (p: Promise<unknown>) => { count++; tasks.push(p); };
+    warmRenderedOnCacheHit(testDb as any, [], 51, 1, waitFn);
+    warmRenderedOnCacheHit(testDb as any, [], 51, 1, waitFn); // 同版本去重
+    expect(count).toBe(1);
+    warmRenderedOnCacheHit(testDb as any, [], 51, 2, waitFn); // 版本变化重新预热
+    expect(count).toBe(2);
+    resetWarmedContentKeys();
+    warmRenderedOnCacheHit(testDb as any, [], 51, 1, waitFn); // reset 后允许再预热
+    expect(count).toBe(3);
+    await Promise.all(tasks);
   });
 });

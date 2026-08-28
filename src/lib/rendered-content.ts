@@ -3,6 +3,7 @@ import { schema, type Database } from '@/db';
 import { renderContent, renderMarkdownFiltered, renderExcerptHtml, type RenderedContent } from '@/lib/markdown';
 import { escapeHtml } from '@/lib/escape';
 import type { RequestContext } from '@/lib/context';
+import { setActivatedPlugins } from '@/lib/plugin';
 
 /**
  * 预渲染缓存（typecho_contents_rendered 表 + isolate 内 LRU）。
@@ -125,6 +126,50 @@ export function resetRenderedLru(): void {
 
 /** 内存中的 pending map：防止同一篇文章被并发重复渲染。 */
 const pendingRenders = new Map<string, Promise<RenderedContent>>();
+/**
+ * 缓存命中时后台预热详情页预渲染。
+ *
+ * 匿名 GET 的文章页由边缘缓存命中时，中间件直接返回缓存响应，Astro 路由不会
+ * 执行，懒预渲染回填（getRenderedContent 写表）不触发——这会导致缓存过期后
+ * 的首个 miss 请求仍要承担完整渲染成本。此函数在缓存命中时把渲染移到
+ * waitUntil 后台：查正文 → 渲染 → 写回预渲染表，下次 miss 直接命中表。
+ *
+ * 按 (cacheVersion, cid) 去重：同版本下每篇文章只预热一次；内容变更（版本戳
+ * bump）后自动重新预热。
+ */
+const warmedContentKeys = new Set<string>();
+
+/** Test-only: clear the cache-hit warm dedup set. */
+export function resetWarmedContentKeys(): void {
+  warmedContentKeys.clear();
+}
+
+export function warmRenderedOnCacheHit(
+  db: Database,
+  activatedIds: string[],
+  cid: number,
+  cacheVersion: string | number,
+  waitUntil: (p: Promise<unknown>) => void,
+): void {
+  const key = `${cacheVersion}:${cid}`;
+  if (warmedContentKeys.has(key)) return;
+  warmedContentKeys.add(key);
+  const task = (async () => {
+    try {
+      const pluginCtx = { activatedPlugins: new Set<string>() };
+      if (activatedIds.length > 0) await setActivatedPlugins(pluginCtx, activatedIds);
+      const row = await db.query.contents.findFirst({
+        columns: { text: true },
+        where: eq(schema.contents.cid, cid),
+      });
+      if (!row || row.text == null) return;
+      await getRenderedContent(db, cid, row.text, { ctx: pluginCtx });
+    } catch (err) {
+      console.warn('[rendered-content] 缓存命中预热失败:', err);
+    }
+  })();
+  waitUntil(task);
+}
 
 // ─── 详情页渲染 ──────────────────────────────────────────────────────────────
 
@@ -132,7 +177,8 @@ export interface GetRenderedOptions {
   /** Workers waitUntil，用于异步回填不阻塞响应 */
   waitUntil?: (p: Promise<unknown>) => void;
   /** 传入则执行 content:markdown / content:content 插件 filter */
-  ctx?: RequestContext;
+  /** 传入则执行 content:markdown / content:content 插件 filter（仅使用 activatedPlugins） */
+  ctx?: { activatedPlugins: Set<string> };
   /** 摘要最大长度，默认 200 */
   maxExcerptLength?: number;
   /** 调用方已在同一 D1 batch 中预加载的缓存行（避免二次查询） */

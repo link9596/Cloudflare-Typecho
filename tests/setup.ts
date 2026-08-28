@@ -11,7 +11,7 @@ import { resetSidebarSnapshots } from '@/lib/sidebar';
 import { resetPluginInitState } from '@/lib/plugin';
 import { resetCommentRootCountCache } from '@/lib/comment-page';
 import { resetArchiveCountCache } from '@/lib/page-data';
-import { resetRenderedLru } from '@/lib/rendered-content';
+import { resetRenderedLru, resetWarmedContentKeys } from '@/lib/rendered-content';
 
 // @ts-ignore - Make caches global for tests
 globalThis.caches = caches;
@@ -27,4 +27,5 @@ beforeEach(() => {
   resetCommentRootCountCache();
   resetArchiveCountCache();
   resetRenderedLru();
+  resetWarmedContentKeys();
 });
