@@ -58,49 +58,5 @@ const pluginSnippets = await getClientSnippets(pluginCtx ?? { activatedPlugins: 
   <slot />
   <Fragment set:html={pluginSnippets.bodyHtml} />
   
-<script type="module">
-  import Swup from 'swup';
-
-  function initLightbox() {
-    if (window.Lightbox && typeof window.Lightbox.init === 'function') {
-      window.Lightbox.init('.lightbox-img');
-    }
-  }
-
-  function initLivePhoto() {
-    if (typeof LivePhoto !== 'undefined' && typeof LivePhoto.init === 'function') {
-      LivePhoto.init('.live-photo');
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    try {
-      const swup = new Swup({
-        containers: ['#main', '#secondary', '#header', '#footer'],
-        cache: true,
-        linkSelector: 'a[href^="/"], a[href^="' + window.location.origin + '/"]',
-        smoothScrolling: true,
-        animationDuration: 400,
-      });
-      window.swup = swup;
-
-      // 首次加载初始化
-      initLightbox();
-      initLivePhoto();
-
-      // Swup 切换后重新初始化
-      if (swup.hooks && typeof swup.hooks.on === 'function') {
-        swup.hooks.on('page:view', function () {
-          initLightbox();
-          initLivePhoto();
-        });
-      } else {
-        console.warn('Swup hooks.on not available');
-      }
-    } catch (error) {
-      console.error('Swup initialization failed:', error);
-    }
-  });
-</script>
 </body>
 </html>
