@@ -1,20 +1,49 @@
 {
   "name": "typecho-plugin-livephoto",
   "version": "1.0.0",
-  "description": "LivePhoto plugin for Typecho-CF",
+  "description": "LivePhoto 和 Lightbox 插件",
   "keywords": ["typecho", "plugin"],
-  "author": "Your Name",
-  "license": "MIT",
   "type": "module",
   "main": "index.ts",
   "typecho": {
     "plugin": {
       "id": "typecho-plugin-livephoto",
-      "name": "LivePhoto 插件",
-      "description": "解析 [LivePhoto] 语法，生成 LivePhoto 播放器",
-      "author": "Your Name",
+      "name": "LivePhoto & Lightbox",
+      "description": "为文章添加 LivePhoto 和 Lightbox 功能",
+      "author": "Link",
       "version": "1.0.0",
-      "tags": ["livephoto", "media"]
+      "config": {
+        "lightboxSelector": {
+          "type": "text",
+          "label": "Lightbox 图片选择器",
+          "default": ".lightbox-img",
+          "description": "用于触发 Lightbox 的图片 CSS 选择器，支持多选"
+        },
+        "livePhotoSelector": {
+          "type": "text",
+          "label": "LivePhoto 容器选择器",
+          "default": ".live-photo",
+          "description": "多个选择器请用英文逗号分隔，如：.live-photo, .live-img"
+        },
+        "enableLightbox": {
+          "type": "radio",
+          "label": "启用 Lightbox",
+          "default": "1",
+          "options": {
+            "1": "启用",
+            "0": "禁用"
+          }
+        },
+        "enableLivePhoto": {
+          "type": "radio",
+          "label": "启用 LivePhoto",
+          "default": "1",
+          "options": {
+            "1": "启用",
+            "0": "禁用"
+          }
+        }
+      }
     }
   }
 }
