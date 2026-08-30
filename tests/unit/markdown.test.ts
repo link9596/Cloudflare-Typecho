@@ -309,3 +309,32 @@ describe('autop', () => {
     expect(html).toBe('<p>hello</p>\n<p>world</p>');
   });
 });
+// ---------------------------------------------------------------------------
+// LivePhoto markdown extension (moved from the plugin into core)
+// ---------------------------------------------------------------------------
+
+describe('LivePhoto markdown extension', () => {
+  it('renders [LivePhoto] into a live-photo container with default 3/4 ratio', () => {
+    const html = renderMarkdown('[LivePhoto photo="https://a.png" video="https://b.mp4"]');
+    expect(html).toContain('class="live-photo live-photo-wrapper"');
+    expect(html).toContain(`padding-top:${(4 / 3) * 100}%`); // default 3/4 ratio
+    expect(html).toContain('src="https://a.png"');
+    expect(html).toContain('<source src="https://b.mp4"');
+  });
+
+  it('honours a custom ratio', () => {
+    const html = renderMarkdown('[LivePhoto photo="https://a.png" video="https://b.mp4" ratio="4/3"]');
+    expect(html).toContain('padding-top:75%');
+  });
+
+  it('escapes photo/video URLs', () => {
+    const html = renderMarkdown('[LivePhoto photo="https://a.png?a=1&b=2" video="https://b.mp4"]');
+    expect(html).toContain('src="https://a.png?a=1&amp;b=2"');
+  });
+
+  it('leaves non-LivePhoto markdown untouched', () => {
+    const html = renderMarkdown('plain **text**');
+    expect(html).not.toContain('live-photo');
+    expect(html).toContain('<strong>text</strong>');
+  });
+});

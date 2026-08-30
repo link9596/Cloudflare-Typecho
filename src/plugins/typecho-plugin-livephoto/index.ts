@@ -5,7 +5,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
   // ========== 前台注入 ==========
   addHook('archive:footer', pluginId, (html: string, extra?: { options?: Record<string, unknown> }) => {
     // 读取插件配置
-    const config = loadPluginConfig(extra?.options, pluginId);
+    const config = loadPluginConfig(extra?.options ?? {}, pluginId);
 
     const lightboxSelector = config.lightboxSelector || '.lightbox-img';
     const livePhotoSelector = config.livePhotoSelector || '.live-photo';

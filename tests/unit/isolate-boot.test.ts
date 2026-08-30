@@ -6,6 +6,7 @@ import {
   ensurePasswordResetSchema,
   ensureIndexes,
   TablesMissingError,
+  RUNTIME_SCHEMA_VERSION,
 } from '@/lib/isolate-boot';
 import { isFtsAvailable, resetFtsAvailability } from '@/lib/fulltext';
 
@@ -75,7 +76,7 @@ describe('ensureTablesReady', () => {
 
 describe('ensureDatabaseReady', () => {
   it('uses the persistent schema version fast path on a cold isolate', async () => {
-    const first = vi.fn().mockResolvedValue({ runtimeSchemaVersion: '20260816' });
+    const first = vi.fn().mockResolvedValue({ runtimeSchemaVersion: RUNTIME_SCHEMA_VERSION });
     const d1 = {
       prepare: vi.fn().mockReturnValue({ first }),
       batch: vi.fn(),
@@ -91,7 +92,7 @@ describe('ensureDatabaseReady', () => {
     const createRun = vi.fn().mockResolvedValue({});
     const prepare = vi.fn((sql: string) => {
       if (sql.startsWith('SELECT (SELECT value')) {
-        return { first: vi.fn().mockResolvedValue({ runtimeSchemaVersion: '20260816', loginFailuresExists: 0 }) };
+        return { first: vi.fn().mockResolvedValue({ runtimeSchemaVersion: RUNTIME_SCHEMA_VERSION, loginFailuresExists: 0 }) };
       }
       return { run: createRun };
     });
@@ -113,7 +114,8 @@ describe('ensureDatabaseReady', () => {
 
     const a = ensureDatabaseReady(d1);
     const b = ensureDatabaseReady(d1);
-    release({ runtimeSchemaVersion: '20260816' } as any);
+    release({ runtimeSchemaVersion: RUNTIME_SCHEMA_VERSION } as any);
+
     await Promise.all([a, b]);
 
     expect(d1.prepare).toHaveBeenCalledOnce();
