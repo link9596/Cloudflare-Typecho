@@ -7,7 +7,6 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     // 读取插件配置
     const config = loadPluginConfig(extra?.options, pluginId);
 
-    // 提取配置值，如果未设置则使用默认值
     const lightboxSelector = config.lightboxSelector || '.lightbox-img';
     const livePhotoSelector = config.livePhotoSelector || '.live-photo';
     const enableLightbox = config.enableLightbox !== '0';
@@ -22,12 +21,41 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
   var enableLightbox = ${enableLightbox};
   var enableLivePhoto = ${enableLivePhoto};
 
+  // ----- 保存实例引用，用于清理 -----
+  var livePhotoInstances = [];
+  var lightboxDestroyFn = null;
+
   function initialize() {
-    if (enableLivePhoto && typeof LivePhoto !== 'undefined' && typeof LivePhoto.init === 'function') {
-      LivePhoto.init(livePhotoSelector);
+    // 清理旧的 LivePhoto
+    if (livePhotoInstances.length > 0) {
+      livePhotoInstances.forEach(function(inst) {
+        if (inst && typeof inst.destroy === 'function') inst.destroy();
+      });
+      livePhotoInstances = [];
     }
-    if (enableLightbox && typeof Lightbox !== 'undefined' && typeof Lightbox.init === 'function') {
-      Lightbox.init(lightboxSelector);
+
+    // 清理旧的 Lightbox 监听器
+    if (lightboxDestroyFn) {
+      lightboxDestroyFn();
+      lightboxDestroyFn = null;
+    }
+
+    // 关闭还开着的灯箱
+    if (typeof Lightbox !== 'undefined' && typeof Lightbox.close === 'function') {
+      Lightbox.close();
+    }
+
+    // 重新初始化
+    if (enableLivePhoto && typeof LivePhoto !== 'undefined') {
+      var instances = LivePhoto.init(livePhotoSelector);
+      if (Array.isArray(instances)) {
+        livePhotoInstances = instances;
+      }
+    }
+
+    if (enableLightbox && typeof Lightbox !== 'undefined') {
+      // Lightbox.init 返回销毁函数
+      lightboxDestroyFn = Lightbox.init(lightboxSelector);
     }
   }
 
@@ -57,7 +85,7 @@ export default function init({ addHook, pluginId }: PluginInitContext): void {
     return html + script;
   });
 
-  // ========== 后台编辑器注入（完全保持不变） ==========
+  // ========== 后台编辑器注入 ==========
   const editorUIHtml = `
 <div id="livephoto-dialog" class="wmd-prompt-dialog" style="display:none; position:fixed; top:50%; left:50%; z-index:10000; background:#fff; border:1px solid #ccc; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.2); padding:20px;">
   <div>
