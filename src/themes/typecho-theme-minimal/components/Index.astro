@@ -54,7 +54,7 @@ const processPost = (post: any) => {
 
   // 3. 头像处理
   const email = post.author?.mail || '';
-  let avatarUrl = 'https://r2-slow.lkin.cn/web/avatar.png';
+  let avatarUrl = 'https://r2-slow.lkin.cn/dark/res/avatar.png';
   if (email) {
     const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
     avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;

@@ -16,7 +16,7 @@
         "lightboxSelector": {
           "type": "text",
           "label": "Lightbox 图片选择器",
-          "default": ".lightbox-img",
+          "default": ".lightbox-img, .post-content img",
           "description": "用于触发 Lightbox 的图片 CSS 选择器，支持多选"
         },
         "livePhotoSelector": {
@@ -30,8 +30,8 @@
           "label": "启用 Lightbox",
           "default": "1",
           "options": {
-            "1": "启用",
-            "0": "禁用"
+            "0": "禁用",
+            "1": "启用"
           }
         },
         "enableLivePhoto": {
@@ -39,8 +39,8 @@
           "label": "启用 LivePhoto",
           "default": "1",
           "options": {
-            "1": "启用",
-            "0": "禁用"
+            "0": "禁用",
+            "1": "启用"
           }
         }
       }

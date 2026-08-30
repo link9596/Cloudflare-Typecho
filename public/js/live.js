@@ -1260,14 +1260,14 @@
                 const img = livePhotoContainer.querySelector('.live-photo-img');
                 if (img && !activeLightbox && !isAnimating) {
                     e.preventDefault();
-                    openLightbox(img);
+                    openLightbox();
                     return;
                 }
             }
             const img = e.target.closest(selector);
             if (img && img.tagName === 'IMG' && !activeLightbox && !isAnimating) {
                 e.preventDefault();
-                openLightbox(img);
+                openLightbox();
             }
         };
         document.body.addEventListener('click', handleGlobalClick);
