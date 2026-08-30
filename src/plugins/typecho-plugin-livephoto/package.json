@@ -11,6 +11,8 @@
       "name": "LivePhoto & Lightbox",
       "description": "为文章添加 LivePhoto 和 Lightbox 功能",
       "author": "Link",
+      "authorUrl": "https://atlinker.cn",
+      "homepage": "https://github.com/link9596/WebLivePhoto",
       "version": "1.0.0",
       "config": {
         "lightboxSelector": {
