@@ -5,7 +5,6 @@
 import Base from '@/layouts/Base.astro';
 import type { ThemeIndexProps } from '@/lib/theme-props';
 import { formatDate, buildAuthorLink } from '@/lib/content';
-import { createHash } from 'node:crypto';
 
 type Props = ThemeIndexProps;
 
@@ -53,12 +52,7 @@ const processPost = (post: any) => {
   excerpt = excerpt.replace(/<img[^>]+>/g, '').trim();
 
   // 3. 头像处理
-  const email = post.author?.mail || '';
-  let avatarUrl = 'https://r2-slow.lkin.cn/dark/res/avatar.png';
-  if (email) {
-    const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
-    avatarUrl = `https://www.gravatar.com/avatar/${hash}?s=48&d=identicon`;
-  }
+  const avatarUrl = post.author?.avatarUrl || '/img/avatar.svg';
 
   return { ...post, excerpt, mediaItems, avatarUrl };
 };

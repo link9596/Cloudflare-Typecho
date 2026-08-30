@@ -43,7 +43,7 @@ export interface PostListItem {
   excerpt: string;
   created: number;
   commentsNum: number;
-  author: { uid: number; name: string; screenName: string } | null;
+  author: { uid: number; name: string; screenName: string; avatarUrl: string } | null;
   categories: Array<{ name: string; slug: string; permalink: string }>;
 }
 
