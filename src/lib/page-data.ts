@@ -176,19 +176,14 @@ function buildCommentOptions(options: SiteOptions, securityToken: string): Comme
   };
 }
 
-// 已修改：fetchAuthors 接收 defaultAvatar 参数，并生成 avatarUrl
-async function fetchAuthors(db: Database, authorIds: number[], defaultAvatar: string): Promise<AuthorMap> {
-  if (authorIds.length === 0) return new Map();
-  const authors = await db
-    .select({
-      uid: schema.users.uid,
-      name: schema.users.name,
-      screenName: schema.users.screenName,
-      mail: schema.users.mail,
-    })
-    .from(schema.users)
-    .where(sql`${schema.users.uid} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`);
-
+/**
+ * 由用户行构建 AuthorMap：有邮箱则生成真实头像 URL（Gravatar/Libravatar），
+ * 没有邮箱时回退到默认头像。
+ */
+async function buildAuthorMap(
+  authors: Array<{ uid: number; name: string | null; screenName: string | null; mail: string | null }>,
+  defaultAvatar: string,
+): Promise<AuthorMap> {
   const entries = await Promise.all(
     authors.map(async (a) => {
       const avatarUrl = a.mail
@@ -454,22 +449,19 @@ async function prepareArchiveData(
             uid: schema.users.uid,
             name: schema.users.name,
             screenName: schema.users.screenName,
-            mail: schema.users.mail, // 带上 mail
+            mail: schema.users.mail,
           })
           .from(schema.users)
           .where(sql`${schema.users.uid} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`),
         categoryStatement,
       ]);
-      // 这里也需要生成 avatarUrl（但下面会统一用 fetchAuthors 覆盖，暂时保留）
-      // 但为了保险，我们还是调用 fetchAuthors 来生成完整 AuthorMap
-      // 所以这里只用原始数据临时赋值，后续会被 fetchAuthors 覆盖
-      authorMap = new Map(authors.map(author => [author.uid, { uid: author.uid, name: author.name, screenName: author.screenName, avatarUrl: defaultAvatar }]));
+      // 在同一个 batch 中并行取出作者（含 mail），直接构建带真实头像的 AuthorMap
+      authorMap = await buildAuthorMap(authors, defaultAvatar);
       categoryRows = categories;
     }
   }
-
-  // 使用 fetchAuthors 统一生成头像（传入 defaultAvatar）
-  authorMap ??= await fetchAuthors(db, authorIds, defaultAvatar);
+  // 无论作者是否存在，列表渲染都要求 authorMap 为 Map（无作者时为空 Map）
+  authorMap ??= new Map();
 
   const categoryMap = mapPostCategories(
     categoryRows,

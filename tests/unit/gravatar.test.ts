@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { buildGravatarUrl, createGravatarHash } from '@/lib/gravatar';
 
 describe('gravatar helpers', () => {
-  it('hashes trimmed lowercase email addresses with SHA-256', async () => {
+  it('hashes trimmed lowercase email addresses with MD5', async () => {
     await expect(createGravatarHash(' MyEmailAddress@example.com ')).resolves.toBe(
-      '84059b07d4be67b806386c0aad8070a23f18836bbaae342275dc0a83414c32ee',
+      '0bc83cb571cd1c50ba6f3e8a78ef1346',
     );
   });
 
@@ -16,13 +16,13 @@ describe('gravatar helpers', () => {
     });
 
     expect(url).toBe(
-      'https://www.gravatar.com/avatar/84059b07d4be67b806386c0aad8070a23f18836bbaae342275dc0a83414c32ee?d=identicon&s=40&r=G',
+      'https://seccdn.libravatar.org/avatar/0bc83cb571cd1c50ba6f3e8a78ef1346?d=identicon&s=40&r=G',
     );
   });
 
   it('keeps the default avatar URL valid when no email exists', async () => {
     await expect(buildGravatarUrl('', { defaultImage: 'mp', size: 220 })).resolves.toBe(
-      'https://www.gravatar.com/avatar/?d=mp&s=220',
+      'https://seccdn.libravatar.org/avatar/?d=mp&s=220',
     );
   });
 });

@@ -74,7 +74,7 @@ export interface ThemePostProps extends ThemeBaseProps {
     /** Whether the user has supplied the correct password */
     passwordVerified: boolean;
   };
-  author: { uid: number; name: string; screenName: string } | null;
+  author: { uid: number; name: string; screenName: string; avatarUrl: string } | null;
   categories: Array<{ name: string; slug: string; permalink: string }>;
   tags: Array<{ name: string; slug: string; permalink: string }>;
   comments: CommentNode[];
