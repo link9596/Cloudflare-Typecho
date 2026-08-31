@@ -27,8 +27,10 @@ export default defineConfig({
       cache: true,
       smoothScrolling: true,
       animationDuration: 400,
-      ignoreVisit: (url, { el }) => 
-  url.startsWith('/admin') || el?.closest('[data-no-swup]')
+  ignoreVisit: (url, { el, event }) => {
+    console.log('Swup navigate to:', url);
+    return url.startsWith('/admin');
+  },
     }),
   ],
   vite: {
