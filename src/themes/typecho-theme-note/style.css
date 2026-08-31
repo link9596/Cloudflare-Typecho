@@ -331,7 +331,7 @@ textarea {
   padding: 0;
 }
 .comment-list li {
-  padding: 14px;
+  padding: 14px 14px 0px 14px;
   margin-top: 10px;
   border: 1px solid #EEE;
 }
@@ -371,13 +371,16 @@ textarea {
     padding: 0;
 }
 
+/* 第二层 */
 #comments > .comment-list > li > .comment-children > .comment-list > li {
     margin-left: 20px;
+    border: 0px;
 }
 
-/* 第三层取消额外缩进，与第二层对齐 */
+/* 第三层 */
 #comments .comment-list .comment-list .comment-list .comment-body {
     margin-left: 0;
+    border: 0px;
 }
 
 /* Comment reply */
