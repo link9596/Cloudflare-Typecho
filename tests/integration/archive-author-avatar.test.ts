@@ -80,7 +80,7 @@ function buildCtx() {
 }
 
 // MD5('alice@example.com') on seccdn.libravatar.org
-const ALICE_AVATAR = 'https://seccdn.libravatar.org/avatar/c160f8cc69a4f0bf2b0362752353d060?d=identicon&s=48&r=G';
+const ALICE_AVATAR = 'https://seccdn.libravatar.org/avatar/c160f8cc69a4f0bf2b0362752353d060?d=identicon&s=96&r=G';
 
 describe('list author avatar (G7-?)', () => {
   beforeEach(async () => {
