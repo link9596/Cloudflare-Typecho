@@ -142,7 +142,7 @@ async function buildGravatarMap(allComments: CommentRow[], avatarRating: string)
       if (!pending) {
         pending = buildGravatarUrl(email, {
           defaultImage: 'identicon',
-          size: 40,
+          size: 96,
           rating: avatarRating,
         });
         urlsByEmail.set(email, pending);
@@ -187,7 +187,7 @@ async function buildAuthorMap(
   const entries = await Promise.all(
     authors.map(async (a) => {
       const avatarUrl = a.mail
-        ? await buildGravatarUrl(a.mail, { defaultImage: 'identicon', size: 48, rating: 'G' })
+        ? await buildGravatarUrl(a.mail, { defaultImage: 'identicon', size: 96, rating: 'G' })
         : defaultAvatar;
       return [a.uid, { uid: a.uid, name: a.name, screenName: a.screenName, avatarUrl }] as const;
     })
