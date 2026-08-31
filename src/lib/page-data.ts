@@ -240,7 +240,7 @@ function toPostListItem(
     excerpt,
     created: post.created || 0,
     commentsNum: post.commentsNum || 0,
-    // 已修改：author 中已包含 avatarUrl
+    status: post.status || '',
     author: author ? { uid: author.uid, name: author.name || '', screenName: author.screenName || author.name || '', avatarUrl: author.avatarUrl } : null,
     categories,
   };

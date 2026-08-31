@@ -53,6 +53,15 @@ button {
     border-radius: 6px;
 }
 
+.meta-tags {
+    background:#ff00525e;
+    color:#fff;
+    font-size:0.65rem;
+    padding:2px 8px;
+    border-radius:4px;
+    margin-left:8px;
+}
+
 .logout-form {
   display: inline;
   margin: 0;

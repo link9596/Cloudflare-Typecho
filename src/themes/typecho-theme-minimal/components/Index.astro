@@ -156,6 +156,9 @@ function buildSquareLivePhoto(src: string, videoSrc?: string): string {
                         >
                           {post.commentsNum === 0 ? '评论' : `${post.commentsNum} 条评论`}
                         </a>
+		{post.status === 'private' && (
+		<span class="meta-tags">私密</span>
+		)}
                       </div>
                     </div>
                   </div>
