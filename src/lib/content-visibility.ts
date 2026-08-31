@@ -27,7 +27,8 @@ export function publishedPostCondition(now = nowSeconds()) {
 /**
  * List condition for posts that respects viewer permissions.
  * - Unauthenticated: only 'publish'
- * - Authenticated: own 'hidden' + all 'publish'
+ * - Authenticated: own 'private' + all 'publish'
+ *   （隐藏 'hidden' 文章不在列表中显示）
  */
 export function listPostCondition(viewer: ContentViewer, now = nowSeconds()) {
   const baseType = eq(schema.contents.type, 'post');
@@ -40,7 +41,7 @@ export function listPostCondition(viewer: ContentViewer, now = nowSeconds()) {
       or(
         eq(schema.contents.status, 'publish'),
         and(
-          eq(schema.contents.status, 'hidden'),
+          eq(schema.contents.status, 'private'),
           eq(schema.contents.authorId, viewer.uid)
         )
       )
