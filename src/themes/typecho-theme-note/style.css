@@ -366,6 +366,21 @@ textarea {
   font-style: normal;
 }
 
+.comment-children {
+    margin: 0 -14px;
+    padding: 0;
+}
+
+/*  第二层评论增加左缩进
+#comments > .comment-list > li > .comment-children > .comment-list > li {
+    margin-left: 20px;  /* 缩进大小，可调整 */
+}
+
+/* 第三层取消额外缩进，与第二层对齐 */
+#comments .comment-list .comment-list .comment-list .comment-body {
+    margin-left: 0;
+}
+
 /* Comment reply */
 .comment-list .respond {
   margin-top: 15px;
