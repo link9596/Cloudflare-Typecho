@@ -147,6 +147,17 @@ const totalComments = commentPagination.totalComments;
                       onclick="return TypechoComment.cancelReply()">取消回复</a>
                   </div>
                   <h3 id="response">添加新评论</h3>
+
+                  {/* 登录状态与登出按钮 */}
+                  {isLoggedIn && (
+                    <p>
+                      登录身份: <a href={urls.profileUrl}>{user?.screenName || user?.name}</a>.
+                      <form method="post" action={urls.logoutUrl} class="logout-form" style="display:inline;">
+                        <button type="submit">退出 &raquo;</button>
+                      </form>
+                    </p>
+                  )}
+
                   <form method="post" action="/api/comment" id="comment-form" role="form">
                     <input type="hidden" name="cid" value={String(post.cid)} />
                     <input type="hidden" name="parent" id="comment-parent" value="0" />
@@ -156,12 +167,8 @@ const totalComments = commentPagination.totalComments;
                     {commentOptions.securityToken && (
                       <input type="hidden" name="_" value={commentOptions.securityToken} />
                     )}
-                    {isLoggedIn ? (
-                      <>
-                        <p>登录身份: <a href={urls.profileUrl}>{user?.screenName || user?.name}</a>.</p>
-                        <form method="post" action={urls.logoutUrl} class="logout-form"><button type="submit">退出 &raquo;</button></form>
-                      </>
-                    ) : (
+
+                    {!isLoggedIn ? (
                       <>
                         <p>
                           <label for="author" class="required">称呼</label>
@@ -176,7 +183,8 @@ const totalComments = commentPagination.totalComments;
                           <input type="url" name="url" id="url" class="text" placeholder="http://" />
                         </p>
                       </>
-                    )}
+                    ) : null}
+
                     <p>
                       <label for="textarea" class="required">内容</label>
                       <textarea rows="8" cols="50" name="text" id="textarea" class="textarea" required></textarea>
