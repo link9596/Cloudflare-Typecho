@@ -76,7 +76,7 @@ const adminHeadHtml = await applyFilterSafely(_pluginCtx, 'admin:header', '', { 
 const adminFooterHtml = await applyFilterSafely(_pluginCtx, 'admin:footer', '', { options, urls, user, activeMenu, title });
 ---
 <!DOCTYPE html>
-<html lang={options.lang === 'zh_CN' ? 'zh-CN' : 'en'}>
+<html lang={options.lang === 'zh_CN' ? 'zh-CN' : 'en'} data-no-swup>
 <head>
   <meta charset={options.charset || 'UTF-8'} />
   <meta name="renderer" content="webkit" />
