@@ -331,7 +331,7 @@ textarea {
   padding: 0;
 }
 .comment-list li {
-  padding: 14px 14px 0px 14px;
+  padding: 14px;
   margin-top: 10px;
   border: 1px solid #EEE;
 }
@@ -375,12 +375,14 @@ textarea {
 #comments > .comment-list > li > .comment-children > .comment-list > li {
     margin-left: 20px;
     border: 0px;
+    padding: 14px 14px 0px 14px;
 }
 
 /* 第三层 */
 #comments .comment-list .comment-list .comment-list .comment-body {
     margin-left: 0;
     border: 0px;
+    padding: 14px 14px 0px 14px;
 }
 
 /* Comment reply */
