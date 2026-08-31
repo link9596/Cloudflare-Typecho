@@ -1,12 +1,28 @@
-# Typecho-CF
+
+<div align="center">
+<img style="width:800px" src="https://raw.githubusercontent.com/link9596/Cloudflare-Typecho/refs/heads/master/public/img/ty-cf.svg" alt="">
+<h1>Cloudflare-Typecho</h1>
+</div>
 
 [English](README.en.md)
 
+可以部署在Cloudflare上的 [Typecho](https://typecho.org) 博客，利用Cloudflare免费服务运行在 **Astro + Cloudflare Workers + D1** 之上。保留 Typecho 数据库表结构，支持从 PHP 版 Typecho 直接迁移数据。
+
+该版本基于原仓库 [Typecho-CF](https://github.com/eslizn/typecho-cf) 进行了深度性能优化和改进了后台写作体验。
+
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/link9596/Cloudflare-Typecho)
 
-基于 [Typecho](https://typecho.org) 完整重写的现代博客系统，运行在 **Astro + Cloudflare Workers + D1** 之上。保留 Typecho 数据库表结构，支持从 PHP 版 Typecho 直接迁移数据。
-
 ---
+
+## 深度优化
+
+**基于原仓库 [Typecho-CF](https://github.com/eslizn/typecho-cf) 进行了以下优化**
+
+**性能优化**：加入文章预渲染功能，将Markdown格式转化为HTML格式并持久化缓存。缓存命中后大幅降低冷启动与运行时cpu开销，减少因cpu超时而导致的报错。
+
+**数据库查询优化**：合并简化D1数据库查询，减少数据库查询延迟。
+
+**后台优化**：修复后台附件上传失败、移动端后台菜单点击失效、移动端列表点击无法选中问题等...
 
 ## 功能特性
 

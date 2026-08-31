@@ -1,12 +1,27 @@
-# Typecho-CF
+<div align="center">
+<img style="width:800px" src="https://raw.githubusercontent.com/link9596/Cloudflare-Typecho/refs/heads/master/public/img/ty-cf.svg" alt="">
+<h1>Cloudflare‑Typecho</h1>
+</div>
 
 [中文](README.md)
 
+A [Typecho](https://typecho.org) blog deployable on Cloudflare, built on **Astro + Cloudflare Workers + D1** using Cloudflare’s free tier services. It retains the native Typecho database schema and supports direct data migration from PHP‑based Typecho.
+
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/link9596/Cloudflare-Typecho)
 
-A modern rewrite of [Typecho](https://typecho.org) in TypeScript, running on **Astro + Cloudflare Workers + D1**. Preserves Typecho's database schema for seamless data migration from PHP Typecho.
+This project is forked from the original repository [Typecho‑CF](https://github.com/eslizn/typecho%E2%80%91cf), with extensive performance optimizations and improved backend writing experience.
 
 ---
+
+## Major Enhancements
+
+**The following optimizations have been implemented based on the original repository [Typecho‑CF](https://github.com/eslizn/typecho-cf):**
+
+**Performance Optimizations**: Added article pre‑rendering, which converts Markdown content into HTML and persists the rendered output as cache. Cache hits drastically reduce cold‑start and runtime CPU consumption, mitigating errors triggered by CPU time‑out limits.
+
+**Database Query Optimizations**: Consolidated and streamlined D1 database queries to cut down database latency.
+
+**Backend Improvements**: Fixed multiple backend issues including failed attachment uploads, unresponsive backend menu taps on mobile devices, and broken selection interactions within mobile‑mode lists.
 
 ## Features
 
