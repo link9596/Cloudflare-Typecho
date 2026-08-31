@@ -27,7 +27,7 @@ export default defineConfig({
       cache: true,
       smoothScrolling: true,
       animationDuration: 400,
-      ignore: (url) => url.pathname.startsWith('/admin'),
+      ignore: (href) => href.startsWith('/admin'),
     }),
   ],
   vite: {
