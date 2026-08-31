@@ -54,7 +54,7 @@ button {
 }
 
 .meta-tags {
-    background:#ff00525e;
+    background:#ffa5c2;
     color:#fff;
     font-size:0.65rem;
     padding:2px 8px;
@@ -501,9 +501,7 @@ img.alignright {
 }
 
 @media (max-width: 768px) {
-  #header,
-  .post-title,
-  .post-meta {
+  #header {
     /*text-align: center;*/
     padding-left: 30px;
   }
