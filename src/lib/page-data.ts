@@ -21,7 +21,7 @@ import { generateCommentToken } from '@/lib/auth';
 import { buildGravatarUrl } from '@/lib/gravatar';
 import { loadCommentPage } from '@/lib/comment-page';
 import type { RequestContext } from '@/lib/context';
-import { canViewContent, publishedPostCondition } from '@/lib/content-visibility';
+import { canViewContent, publishedPostCondition, listPostCondition, type ContentViewer } from '@/lib/content-visibility';
 import type {
   ThemeIndexProps, ThemePostProps, ThemePageProps, ThemeArchiveProps, ThemeNotFoundProps,
   PostListItem, CommentNode, CommentOptions,
@@ -294,7 +294,13 @@ async function prepareArchiveData(
   url: URL,
   params: ArchiveParams,
 ): Promise<ThemeArchiveProps> {
-  const { db, options, urls } = ctx;
+  const { db, options, urls, user, isLoggedIn } = ctx;
+
+  // 构造 viewer
+  const viewer: ContentViewer = {
+    uid: user?.uid ?? null,
+    isLoggedIn: !!user,
+  };
 
   // 定义默认头像（可从 options 读取，否则使用 Gravatar 默认标识）
   const defaultAvatar = (options as any).defaultAvatar || '/img/avatar.svg';
@@ -304,7 +310,7 @@ async function prepareArchiveData(
   const pageSize = options.pageSize || 5;
 
   const baseConditions = [
-    publishedPostCondition(),
+    listPostCondition(viewer),
   ];
   if (params.extraWhere) baseConditions.push(params.extraWhere);
   if (params.ftsMatch) {
@@ -455,12 +461,10 @@ async function prepareArchiveData(
           .where(sql`${schema.users.uid} IN (${sql.join(authorIds.map(id => sql`${id}`), sql`, `)})`),
         categoryStatement,
       ]);
-      // 在同一个 batch 中并行取出作者（含 mail），直接构建带真实头像的 AuthorMap
       authorMap = await buildAuthorMap(authors, defaultAvatar);
       categoryRows = categories;
     }
   }
-  // 无论作者是否存在，列表渲染都要求 authorMap 为 Map（无作者时为空 Map）
   authorMap ??= new Map();
 
   const categoryMap = mapPostCategories(

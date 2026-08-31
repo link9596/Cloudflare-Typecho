@@ -1,4 +1,4 @@
-import { and, eq, lte } from 'drizzle-orm';
+import { and, eq, lte, or } from 'drizzle-orm';
 import { schema } from '@/db';
 
 type VisibleContent = Pick<
@@ -22,6 +22,32 @@ export function publishedPostCondition(now = nowSeconds()) {
     eq(schema.contents.status, 'publish'),
     lte(schema.contents.created, now),
   );
+}
+
+/**
+ * List condition for posts that respects viewer permissions.
+ * - Unauthenticated: only 'publish'
+ * - Authenticated: own 'hidden' + all 'publish'
+ */
+export function listPostCondition(viewer: ContentViewer, now = nowSeconds()) {
+  const baseType = eq(schema.contents.type, 'post');
+  const baseDate = lte(schema.contents.created, now);
+
+  if (viewer.isLoggedIn && viewer.uid != null) {
+    return and(
+      baseType,
+      baseDate,
+      or(
+        eq(schema.contents.status, 'publish'),
+        and(
+          eq(schema.contents.status, 'hidden'),
+          eq(schema.contents.authorId, viewer.uid)
+        )
+      )
+    );
+  } else {
+    return and(baseType, eq(schema.contents.status, 'publish'), baseDate);
+  }
 }
 
 /** Public detail visibility, with author-only access for drafts/private/future content. */

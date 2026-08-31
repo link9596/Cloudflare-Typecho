@@ -2,6 +2,8 @@
 
 [中文](README.md)
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/link9596/Cloudflare-Typecho)
+
 A modern rewrite of [Typecho](https://typecho.org) in TypeScript, running on **Astro + Cloudflare Workers + D1**. Preserves Typecho's database schema for seamless data migration from PHP Typecho.
 
 ---
