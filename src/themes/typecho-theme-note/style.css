@@ -9,6 +9,23 @@
 /* ------------------
  * Global style
  * --------------- */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+    #main, #footer {
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      will-change: opacity, transform;
+    }
+    html.is-animating #main, #footer {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    html.is-leaving #main, #footer {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
 body {
   background-color: #FFF;
   color: #444;
@@ -23,6 +40,28 @@ a {
 a:hover, a:active {
   color: #444;
 }
+
+button {
+    -webkit-appearance: button;
+    background-color: #5973b9;
+    border: none;
+    color: #ffffff;
+    padding: 5px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 6px;
+}
+
+.meta-tags {
+    background:#ffa5c2;
+    color:#fff;
+    font-size:0.65rem;
+    padding:2px 8px;
+    border-radius:4px;
+    margin-left:8px;
+}
+
 .logout-form {
   display: inline;
   margin: 0;
@@ -195,7 +234,7 @@ textarea {
  * --------------- */
 
 .post {
-  padding: 15px 0 20px;
+  padding: 15px 0 0 0;
   border-bottom: 1px solid #EEE;
 }
 .post-title {
@@ -404,11 +443,13 @@ textarea {
 .post-content img, .comment-content img,
 .post-content video, .comment-content video {
   max-width: 100%;
+  border-radius: 6px;
 }
 .post-content a img,
 .comment-content a img {
   background: #FFF;
   position: relative;
+  border-radius: 6px;
   bottom: -4px;  /* hidden img parent link border  */
 }
 .post-content hr, .comment-content hr {
@@ -451,15 +492,21 @@ img.alignright {
   #nav-menu a {
     float: none;
     display: inline-block;
-    margin: 0 -2px;
+    margin: 0px;
+  }
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
 @media (max-width: 768px) {
-  #header,
-  .post-title,
-  .post-meta {
-    text-align: center;
+  #header {
+    /*text-align: center;*/
+    padding-left: 30px;
+  }
+  #nav-menu {
+    margin: 25px 0 0 -10px;
   }
 }
 
@@ -473,6 +520,132 @@ img.alignright {
   }
 }
 
+/* LivePhoto 样式 */
+.live-photo {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y pinch-zoom;
+    border-radius: 6px;
+}
+
+.live-photo-img,
+.live-photo-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    transform-origin: center center;
+    border-radius: 6px;
+    user-select: none;
+}
+
+.live-photo-img {
+    z-index: 2;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.3s linear, transform 0.3s linear;
+}
+
+.live-photo-video {
+    z-index: 1;
+    transform: scale(1);
+    transition: transform 0.3s linear;
+}
+
+.live-photo.is-playing .live-photo-img {
+    opacity: 0;
+    transform: scale(1.08);
+}
+
+.live-photo.is-playing .live-photo-video {
+    transform: scale(1.08);
+}
+
+.live-photo-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(4px);
+    padding: 2px 8px 2px 2px;
+    border-radius: 5px;
+    pointer-events: none;
+}
+
+.live-photo-icon {
+    width: 20px;
+    height: 20px;
+    position: relative;
+}
+
+.live-photo-icon-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.live-photo-disabled-icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+
+.live-photo-text {
+    font-size: 12px;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: #000;
+    line-height: 1;
+    margin-top: 1px;
+}
+
+.live-photo-progress-ring {
+    transition: stroke-dashoffset 0.2s linear;
+}
+
+/* 针对列表卡片中的 LivePhoto 容器 */
+.post-list .live-photo-wrapper,
+.archive-list .live-photo-wrapper {
+    display: block;          /* 覆盖可能的 inline-block */
+    width: 100%;
+    height: auto;            /* 高度由 padding-top 撑起 */
+    overflow: hidden;        /* 防止溢出 */
+    background: #000;        /* 可选背景色，替代视频未加载时的白底 */
+}
+
+/* 内部图片视频铺满并保持比例 */
+.post-list .live-photo-wrapper img,
+.post-list .live-photo-wrapper video,
+.archive-list .live-photo-wrapper img,
+.archive-list .live-photo-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* 如果网格项本身有固定的宽高限制，可让容器自适应 */
+.post-list article {
+    /* 确保网格项高度自动，不固定 */
+    height: auto;
+}
 
 /*
 * Hide from both screenreaders and browsers: h5bp.com/u
