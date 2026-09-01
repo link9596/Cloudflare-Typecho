@@ -13,12 +13,21 @@
 ![Static Badge](https://img.shields.io/badge/Astro-astro?logo=astro&logoColor=white&style=flat-square&color=cf3ce1)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
+<<<<<<< HEAD
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/link9596/Cloudflare-Typecho)
 
 [**📚 Wiki文档**](https://github.com/link9596/Cloudflare-Typecho/wiki) · [**☁️ 在线预览**](https://ty.lkin.cn) · [**💬 反馈**](https://github.com/link9596/Cloudflare-Typecho/issues) · [**🛡️ 安全**](#%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B5%8B%E8%AF%95%E7%BA%A6%E6%9D%9F) · [**💾 数据迁移**](#%E4%BB%8E-php-%E7%89%88-typecho-%E8%BF%81%E7%A7%BB)
 
 简体中文 | [English](README.en.md)
 
+=======
+<br/>
+
+[**📚 文档**](https://github.com/link9596/Cloudflare-Typecho/wiki) · [**☁️ 在线预览**](https://ty.lkin.cn) · [**💬 反馈**](https://github.com/link9596/Cloudflare-Typecho/issues) · [**🛡️ 安全**](#%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B5%8B%E8%AF%95%E7%BA%A6%E6%9D%9F) · [**🔒 数据迁移**](#%E4%BB%8E-php-%E7%89%88-typecho-%E8%BF%81%E7%A7%BB)
+
+</div>
+  
+>>>>>>> 5e5df7b214018ea52c76a24370fab23f10b3335e
 </div>
 
 
