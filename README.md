@@ -1,10 +1,26 @@
 
 <div align="center">
-<img style="width:800px" src="https://raw.githubusercontent.com/link9596/Cloudflare-Typecho/refs/heads/master/public/img/ty-cf.svg" alt="">
-<h1>Cloudflare-Typecho</h1>
+<img style="width:600px" src="https://raw.githubusercontent.com/link9596/Cloudflare-Typecho/refs/heads/master/public/img/ty-cf.svg" alt="">
+
+# Cloudflare x Typecho
+
+**部署在Cloudflare上的Typecho博客系统**
+
+<br/>
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+![Static Badge](https://img.shields.io/badge/Astro-astro?logo=astro&logoColor=white&style=flat-square&color=cf3ce1)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+<br/>
+
+[**📚 文档**](https://github.com/link9596/Cloudflare-Typecho/wiki) · [**☁️ 在线预览**](https://ty.lkin.cn) · [**💬 反馈**](https://github.com/link9596/Cloudflare-Typecho/issues) · [**🛡️ 安全**](#%E5%AE%89%E5%85%A8%E4%B8%8E%E6%B5%8B%E8%AF%95%E7%BA%A6%E6%9D%9F) · [**🔒 数据迁移**](#%E4%BB%8E-php-%E7%89%88-typecho-%E8%BF%81%E7%A7%BB)
+
+简体中文 | [English](README.en.md)
+
 </div>
 
-[English](README.en.md)
 
 可以部署在Cloudflare上的 [Typecho](https://typecho.org) 博客，利用Cloudflare免费服务运行在 **Astro + Cloudflare Workers + D1** 之上。保留 Typecho 数据库表结构，支持从 PHP 版 Typecho 直接迁移数据。
 
