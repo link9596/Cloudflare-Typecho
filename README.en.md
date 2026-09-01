@@ -78,8 +78,8 @@ Finally click "deploy", wait for the deployment to complete, visit your domain n
 ### Local development (zero to running)
 
 ```bash
-git clone https://github.com/eslizn/typecho-cf.git
-cd typecho-cf
+git clone https://github.com/link9596/Cloudflare-Typecho.git
+cd Cloudflare-Typecho
 pnpm install
 
 # Create local Wrangler config (placeholder database_id is fine for local D1/R2 simulation)
