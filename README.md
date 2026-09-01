@@ -80,8 +80,8 @@
 ### 本地开发
 
 ```bash
-git clone https://github.com/eslizn/typecho-cf.git
-cd typecho-cf
+git clone https://github.com/link9596/Cloudflare-Typecho.git
+cd Cloudflare-Typecho
 pnpm install
 
 # 生成本地 Wrangler 配置（本地模拟 D1/R2 时可保留示例中的占位 database_id）
