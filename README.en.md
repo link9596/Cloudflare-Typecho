@@ -1,9 +1,25 @@
-<div align="center">
-<img style="width:800px" src="https://raw.githubusercontent.com/link9596/Cloudflare-Typecho/refs/heads/master/public/img/ty-cf.svg" alt="">
-<h1>Cloudflare‑Typecho</h1>
-</div>
 
-[中文](README.md)
+<div align="center">
+<img style="width:600px" src="https://raw.githubusercontent.com/link9596/Cloudflare-Typecho/refs/heads/master/public/img/ty-cf.svg" alt="">
+
+# Cloudflare x Typecho
+
+**Deploy Typecho blog on Cloudflare**
+
+<br/>
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+![Static Badge](https://img.shields.io/badge/Astro-astro?logo=astro&logoColor=white&style=flat-square&color=cf3ce1)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+<br/>
+
+[**📚 Wiki**](https://github.com/link9596/Cloudflare-Typecho/wiki) · [**☁️ Live Demo**](https://ty.lkin.cn) · [**💬 Issues**](https://github.com/link9596/Cloudflare-Typecho/issues) · [**🛡️ Security**](#security--test-rules) · [**💾 Data migration**](#migrating-from-php-typecho)
+
+[简体中文](README.md) | English
+
+</div>
 
 A [Typecho](https://typecho.org) blog deployable on Cloudflare, built on **Astro + Cloudflare Workers + D1** using Cloudflare’s free tier services. It retains the native Typecho database schema and supports direct data migration from PHP‑based Typecho.
 
