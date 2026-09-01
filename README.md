@@ -62,6 +62,21 @@
 - [pnpm](https://pnpm.io)（`npm install -g pnpm`）
 - Cloudflare 帐号（仅部署到 Cloudflare 时需要）
 
+### 通过 Cloudflare 控制台部署
+
+- 准备 Cloudflare 账号与 GitHub 账号。
+
+1. 点击 README 页面上的「Deploy to Cloudflare」按钮。
+   
+2. 按照 Cloudflare 的部署指引操作：
+
+![deploy](https://r2-slow.lkin.cn/wiki%2FCloudflare-Typecho%2Fdeploy.jpg)
+
+点击展开**Advanced settings**，添加环境变量，变量名填写 `INSTALL_TOKEN`，值设置为自定义密钥。
+
+最后点击「Deploy」，等待部署完成，访问你的域名，跟随Typecho安装向导完成初始化配置。
+
+
 ### 本地开发
 
 ```bash
@@ -84,7 +99,7 @@ pnpm run dev
 
 `wrangler.toml` 已加入 `.gitignore`，勿提交真实 `database_id` 或密钥。
 
-### 部署到 Cloudflare
+### 通过命令行部署到 Cloudflare
 
 **1. 登录 Cloudflare**
 
