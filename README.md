@@ -48,6 +48,10 @@
 
 **系统**：主题系统（npm 包分发）、插件系统（30+ 已接入 Hook，支持懒加载）、PHP 版 Typecho 数据迁移工具、PBKDF2-SHA256 认证、CSRF 防护、安全响应头、请求体限额、R2 上传类型校验
 
+## Screenshots
+
+![Typecho](https://typecho.org/usr/themes/bluecode/img/screenshot/st1.png)
+
 ---
 
 ## 安装部署
