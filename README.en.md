@@ -47,6 +47,10 @@ This project is forked from the original repository [Typecho‑CF](https://githu
 
 **System**: Theme system (npm package distribution), lazily loaded plugin system with 30+ wired hooks, PHP Typecho migration tools, PBKDF2-SHA256 authentication, CSRF protection, security headers, request-body limits, and R2 upload validation
 
+## Screenshots
+
+![Typecho](https://typecho.org/usr/themes/bluecode/img/screenshot/st1.png)
+
 ---
 
 ## Installation & Deployment
