@@ -60,6 +60,21 @@ This project is forked from the original repository [Typecho‑CF](https://githu
 - [pnpm](https://pnpm.io) (`npm install -g pnpm`)
 - A Cloudflare account (only required for Cloudflare deployment)
 
+### Install via Cloudflare Dashboard
+
+- A Cloudflare account and a GitHub account are required.
+
+1. Click the `Deploy to Cloudflare` button on the README page.
+
+2. Follow the cloudflare deploy instrution:
+
+![deploy](https://r2-slow.lkin.cn/wiki%2FCloudflare-Typecho%2Fdeploy.jpg)
+
+Expand the `Advansed settings`, add variable name `INSTALL_TOKEN`, and a custom token.
+
+Finally click "deploy", wait for the deployment to complete, visit your domain name, and finish the initial setup following the installation wizard.
+
+
 ### Local development (zero to running)
 
 ```bash
@@ -82,7 +97,7 @@ pnpm run dev
 
 `wrangler.toml` is gitignored — do not commit real `database_id` values or secrets.
 
-### Deploy to Cloudflare (zero to production)
+### Deploy to Cloudflare via CLI (zero to production)
 
 **1. Log in to Cloudflare**
 
