@@ -9,7 +9,7 @@ binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "typecho-cf-db-film"
+database_name = "typecho-cf-db"
 migrations_dir = "drizzle"
 
 [[r2_buckets]]
@@ -21,10 +21,10 @@ enabled = true
 [observability.logs]
 enabled = true
 invocation_logs = false
-head_sampling_rate = 1
+head_sampling_rate = 0.1
 persist = true
 
 [observability.traces]
 enabled = true
-head_sampling_rate = 0.01
+head_sampling_rate = 1
 persist = true
