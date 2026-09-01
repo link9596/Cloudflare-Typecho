@@ -197,6 +197,10 @@ pnpm run reset-password              # 本地
 pnpm run reset-password:cloudflare   # Cloudflare
 ```
 
+> **Q: 为什么在安装后的D1数据库里多出了一张`typecho_contents_rendered`表格？**
+>
+> A: 该表是本项目自建的派生缓存表，仅服务于对Markdown内容的预渲染，不修改也不影响任何 PHP Typecho 原生表结构。
+
 ---
 
 ## 插件开发
