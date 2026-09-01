@@ -13,7 +13,8 @@
 ![Static Badge](https://img.shields.io/badge/Astro-astro?logo=astro&logoColor=white&style=flat-square&color=cf3ce1)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-<br/>
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/link9596/Cloudflare-Typecho)
+
 
 [**📚 Wiki**](https://github.com/link9596/Cloudflare-Typecho/wiki) · [**☁️ Live Demo**](https://ty.lkin.cn) · [**💬 Issues**](https://github.com/link9596/Cloudflare-Typecho/issues) · [**🛡️ Security**](#security--test-rules) · [**💾 Data migration**](#migrating-from-php-typecho)
 
@@ -22,8 +23,6 @@
 </div>
 
 A [Typecho](https://typecho.org) blog deployable on Cloudflare, built on **Astro + Cloudflare Workers + D1** using Cloudflare’s free tier services. It retains the native Typecho database schema and supports direct data migration from PHP‑based Typecho.
-
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/link9596/Cloudflare-Typecho)
 
 This project is forked from the original repository [Typecho‑CF](https://github.com/eslizn/typecho%E2%80%91cf), with extensive performance optimizations and improved backend writing experience.
 
