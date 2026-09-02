@@ -12,6 +12,7 @@
 import type { AstroIntegration } from 'astro';
 import { readFileSync, existsSync, readdirSync, mkdirSync, cpSync, statSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 interface DiscoveredTheme {
   id: string;
@@ -267,7 +268,7 @@ export default function themeLoaderIntegration(): AstroIntegration {
     name: 'typecho-theme-loader',
     hooks: {
       'astro:config:setup': ({ config, updateConfig, injectScript }) => {
-        const rootDir = config.root ? config.root.pathname.replace(/^\/([A-Z]:)/, '$1') : process.cwd();
+        const rootDir = config.root ? fileURLToPath(config.root) : process.cwd();
         const publicDir = join(rootDir, 'public');
 
         // Discover themes

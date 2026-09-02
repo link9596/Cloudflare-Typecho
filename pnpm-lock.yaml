@@ -14,6 +14,9 @@ importers:
       '@swup/astro':
         specifier: ^1.8.0
         version: 1.8.0(rolldown@1.1.5)(supports-color@10.2.2)
+      '@workermailer/smtp':
+        specifier: ^0.2.1
+        version: 0.2.1
       astro:
         specifier: ^7.2.2
         version: 7.2.2(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@26.2.0)(terser@5.51.2)(tsx@4.23.12)
@@ -38,6 +41,9 @@ importers:
       typecho-plugin-scribe:
         specifier: file:src/plugins/typecho-plugin-scribe
         version: file:src/plugins/typecho-plugin-scribe
+      typecho-plugin-smtp-mailer:
+        specifier: file:src/plugins/typecho-plugin-smtp-mailer
+        version: file:src/plugins/typecho-plugin-smtp-mailer
       typecho-plugin-turnstile:
         specifier: file:src/plugins/typecho-plugin-turnstile
         version: file:src/plugins/typecho-plugin-turnstile
@@ -2570,6 +2576,9 @@ packages:
   '@vitest/utils@4.1.10':
     resolution: {integrity: sha512-fy9am/HWxbaGt/Sawrp90vt6Y6jQwf1RX77cz3uwoJwJVMli/e1IEwRPnMNJ7vKfPTwo0diXifkpPvwH9v7nGA==}
 
+  '@workermailer/smtp@0.2.1':
+    resolution: {integrity: sha512-tQ3gTVxpOJ6vLWsYbeCt5EaklrtsnkQsQ5tGrNPk2qAoTo8XSRCNS8tt/Oa/6T/ahXeK4hN05YVVYximNtVQrw==}
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -4944,6 +4953,9 @@ packages:
 
   typecho-plugin-scribe@file:src/plugins/typecho-plugin-scribe:
     resolution: {directory: src/plugins/typecho-plugin-scribe, type: directory}
+
+  typecho-plugin-smtp-mailer@file:src/plugins/typecho-plugin-smtp-mailer:
+    resolution: {directory: src/plugins/typecho-plugin-smtp-mailer, type: directory}
 
   typecho-plugin-turnstile@file:src/plugins/typecho-plugin-turnstile:
     resolution: {directory: src/plugins/typecho-plugin-turnstile, type: directory}
@@ -7618,6 +7630,8 @@ snapshots:
       '@vitest/pretty-format': 4.1.10
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
+
+  '@workermailer/smtp@0.2.1': {}
 
   acorn-jsx@5.3.2(acorn@8.18.0):
     dependencies:
@@ -10327,6 +10341,10 @@ snapshots:
   typecho-plugin-livephoto@file:src/plugins/typecho-plugin-livephoto: {}
 
   typecho-plugin-scribe@file:src/plugins/typecho-plugin-scribe: {}
+
+  typecho-plugin-smtp-mailer@file:src/plugins/typecho-plugin-smtp-mailer:
+    dependencies:
+      '@workermailer/smtp': 0.2.1
 
   typecho-plugin-turnstile@file:src/plugins/typecho-plugin-turnstile: {}
 

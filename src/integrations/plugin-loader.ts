@@ -10,6 +10,7 @@
 import type { AstroIntegration } from 'astro';
 import { readFileSync, existsSync, readdirSync, statSync, realpathSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 interface DiscoveredPlugin {
   id: string;
@@ -234,7 +235,7 @@ export default function pluginLoaderIntegration(): AstroIntegration {
     name: 'typecho-plugin-loader',
     hooks: {
       'astro:config:setup': ({ config, injectScript, updateConfig }) => {
-        const rootDir = config.root ? config.root.pathname.replace(/^\/([A-Z]:)/, '$1') : process.cwd();
+        const rootDir = config.root ? fileURLToPath(config.root) : process.cwd();
 
         // Discover plugins
         discoveredPlugins = discoverPlugins(rootDir);
